@@ -12,9 +12,11 @@ import {
   ChevronDown,
   ChevronRight,
   Sun,
-  Moon
+  Moon,
+  Server
 } from 'lucide-react';
-import { AIConfig, RepositoryConfig } from '../../types/ai';
+import { AIConfig, RepositoryConfig, MCPConfig } from '../../types/ai';
+import { showToast } from '../Toast';
 
 export default function ConfigurationTab() {
   const [aiConfig, setAIConfig] = useState<AIConfig>({
@@ -31,8 +33,17 @@ export default function ConfigurationTab() {
     isConnected: false
   });
 
+  const [mcpConfig, setMcpConfig] = useState<MCPConfig>({
+    serverUrl: '',
+    token: '',
+    headers: {},
+    name: 'sirelia-mcp-client',
+    isEnabled: false
+  });
+
   const [isConnecting, setIsConnecting] = useState(false);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['repository', 'ai', 'theme']));
+  const [isConnectingMCP, setIsConnectingMCP] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['repository', 'ai', 'mcp', 'theme']));
   const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'system'>('system');
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('light');
 
@@ -79,6 +90,7 @@ export default function ConfigurationTab() {
   useEffect(() => {
     const savedAIConfig = localStorage.getItem('sirelia-ai-config');
     const savedRepoConfig = localStorage.getItem('sirelia-repo-config');
+    const savedMCPConfig = localStorage.getItem('sirelia-mcp-config');
     const savedTheme = localStorage.getItem('sirelia-theme');
     
     if (savedAIConfig) {
@@ -96,6 +108,15 @@ export default function ConfigurationTab() {
         setRepoConfig(parsed);
       } catch (error) {
         console.error('Failed to load repo config:', error);
+      }
+    }
+
+    if (savedMCPConfig) {
+      try {
+        const parsed = JSON.parse(savedMCPConfig);
+        setMcpConfig(parsed);
+      } catch (error) {
+        console.error('Failed to load MCP config:', error);
       }
     }
 
@@ -160,6 +181,15 @@ export default function ConfigurationTab() {
     setRepoConfig(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleMCPConfigChange = (field: keyof MCPConfig, value: string | boolean) => {
+    setMcpConfig(prev => {
+      const updatedConfig = { ...prev, [field]: value };
+      // Persist to localStorage
+      localStorage.setItem('sirelia-mcp-config', JSON.stringify(updatedConfig));
+      return updatedConfig;
+    });
+  };
+
   const connectRepository = async () => {
     if (!repoConfig.url) {
       return;
@@ -190,11 +220,23 @@ export default function ConfigurationTab() {
       localStorage.setItem('sirelia-ai-config', JSON.stringify(aiConfig));
       localStorage.setItem('sirelia-repo-config', JSON.stringify(updatedRepoConfig));
       
+      // Show success toast
+      showToast({
+        type: 'success',
+        title: 'Repository Connected',
+        message: 'Successfully connected to repository'
+      });
+      
       // Trigger refresh in other tabs AFTER localStorage is updated
       window.dispatchEvent(new CustomEvent('repositoryConnected'));
       
     } catch (error: unknown) {
-      window.alert('Error connecting repository:' + error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showToast({
+        type: 'error',
+        title: 'Connection Failed',
+        message: 'Error connecting repository: ' + errorMessage
+      });
     } finally {
       setIsConnecting(false);
     }
@@ -213,8 +255,103 @@ export default function ConfigurationTab() {
     window.dispatchEvent(new CustomEvent('aiConfigUpdated'));
   };
 
+  const connectMCP = async () => {
+    if (!mcpConfig.serverUrl) {
+      return;
+    }
+
+    setIsConnectingMCP(true);
+
+    try {
+      const response = await fetch('/api/mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'connect',
+          config: mcpConfig,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to connect to MCP server');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update state and localStorage
+        const updatedMcpConfig = { ...mcpConfig, isEnabled: true };
+        setMcpConfig(updatedMcpConfig);
+        localStorage.setItem('sirelia-mcp-config', JSON.stringify(updatedMcpConfig));
+        
+        // Show success toast
+        showToast({
+          type: 'success',
+          title: 'MCP Connected',
+          message: 'Successfully connected to MCP server'
+        });
+        
+        // Trigger refresh in other tabs
+        window.dispatchEvent(new CustomEvent('mcpConnected'));
+      } else {
+        throw new Error('Failed to connect to MCP server');
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Provide more specific error messages for common issues
+      if (errorMessage.includes('401 Unauthorized')) {
+        showToast({
+          type: 'error',
+          title: 'Authentication Failed',
+          message: 'Invalid or missing access token. Please check your MCP server credentials.'
+        });
+      } else if (errorMessage.includes('Failed to fetch')) {
+        showToast({
+          type: 'error',
+          title: 'Connection Failed',
+          message: 'Unable to reach MCP server. Please check the server URL and try again.'
+        });
+      } else {
+        showToast({
+          type: 'error',
+          title: 'MCP Connection Failed',
+          message: 'Error connecting to MCP server: ' + errorMessage
+        });
+      }
+    } finally {
+      setIsConnectingMCP(false);
+    }
+  };
+
+  const disconnectMCP = async () => {
+    try {
+      const response = await fetch('/api/mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'disconnect',
+        }),
+      });
+
+      if (response.ok) {
+        const updatedMcpConfig = { ...mcpConfig, isEnabled: false };
+        setMcpConfig(updatedMcpConfig);
+        localStorage.setItem('sirelia-mcp-config', JSON.stringify(updatedMcpConfig));
+        window.dispatchEvent(new CustomEvent('mcpConnected'));
+      }
+    } catch (error) {
+      console.error('Error disconnecting MCP:', error);
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-xs">
       {/* Repository Connection Section */}
       <div className="border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800">
         <button
@@ -406,6 +543,112 @@ export default function ConfigurationTab() {
               <Save className="w-4 h-4" />
               <span>Save Configuration</span>
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* MCP Configuration Section */}
+      <div className="border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800">
+        <button
+          onClick={() => toggleSection('mcp')}
+          className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          <div className="flex items-center space-x-2">
+            <Server className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            <span className="font-medium text-gray-700 dark:text-gray-300">MCP Configuration</span>
+          </div>
+          {isCollapsed('mcp') ? (
+            <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          )}
+        </button>
+        
+        {!isCollapsed('mcp') && (
+          <div className="px-3 pb-3 space-y-3">
+            {!mcpConfig.isEnabled ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Server URL
+                  </label>
+                  <input
+                    type="url"
+                    value={mcpConfig.serverUrl}
+                    onChange={(e) => handleMCPConfigChange('serverUrl', e.target.value)}
+                    placeholder="https://mcp.example.com"
+                    className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Access Token
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={mcpConfig.token}
+                      onChange={(e) => handleMCPConfigChange('token', e.target.value)}
+                      placeholder="Enter your MCP access token"
+                      className="text-black dark:text-white w-full px-3 py-2 pr-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
+                    />
+                    <Key className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute right-3 top-2.5" />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Client Name
+                  </label>
+                  <input
+                    type="text"
+                    value={mcpConfig.name}
+                    onChange={(e) => handleMCPConfigChange('name', e.target.value)}
+                    placeholder="Enter your MCP client name"
+                    className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
+                  />
+                </div>
+                
+                <button
+                  onClick={() => {
+                    localStorage.setItem('sirelia-mcp-config', JSON.stringify(mcpConfig));
+                    showToast({
+                      type: 'success',
+                      title: 'Configuration Saved',
+                      message: 'MCP configuration has been saved'
+                    });
+                  }}
+                  className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Configuration</span>
+                </button>
+                
+                <button
+                  onClick={connectMCP}
+                  disabled={isConnectingMCP || !mcpConfig.serverUrl}
+                  className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded-md transition-colors"
+                >
+                  <Server className="w-4 h-4" />
+                  <span>{isConnectingMCP ? 'Connecting...' : 'Connect to MCP Server'}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="text-sm text-green-700">MCP server connected</span>
+                </div>
+                <button
+                  onClick={disconnectMCP}
+                  className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors"
+                >
+                  <Link2Off className="w-4 h-4" />
+                  <span>Disconnect MCP Server</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

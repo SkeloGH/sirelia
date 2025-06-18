@@ -12,6 +12,14 @@ export interface RepositoryConfig {
   isConnected: boolean;
 }
 
+export interface MCPConfig {
+  serverUrl: string;
+  token?: string;
+  headers?: Record<string, string>;
+  name?: string;
+  isEnabled: boolean;
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
