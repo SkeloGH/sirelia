@@ -54,9 +54,6 @@ export default function ConfigurationTab() {
       document.documentElement.classList.add('light');
     }
     localStorage.setItem('sirelia-theme', mode);
-    if (mode === 'system') {
-      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDark: shouldBeDark } }));
-    }
   }, []);
 
   // Model options for each provider
@@ -118,6 +115,8 @@ export default function ConfigurationTab() {
       setSystemTheme(e.matches ? 'dark' : 'light');
       if (themeMode === 'system') {
         applyTheme('system');
+        // Dispatch event when system theme changes and we're in system mode
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDark: e.matches } }));
       }
     };
 
@@ -127,20 +126,6 @@ export default function ConfigurationTab() {
       mediaQuery.removeEventListener('change', handleSystemThemeChange);
     };
   }, [themeMode, applyTheme]);
-
-  // Listen for theme changes from other components
-  useEffect(() => {
-    const handleThemeChange = () => {
-      // Don't override the state if we're in the middle of a manual change
-      // This prevents the event loop from interfering with user selections
-    };
-
-    window.addEventListener('themeChanged', handleThemeChange as EventListener);
-    
-    return () => {
-      window.removeEventListener('themeChanged', handleThemeChange as EventListener);
-    };
-  }, []);
 
   // Handle theme mode change
   const handleThemeModeChange = (mode: 'light' | 'dark' | 'system') => {

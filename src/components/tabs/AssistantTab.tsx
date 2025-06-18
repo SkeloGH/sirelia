@@ -214,14 +214,14 @@ export default function AssistantTab({ onGenerateDiagram }: AssistantTabProps) {
             className={`p-2 rounded-lg text-sm ${
               message.role === 'user'
                 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 ml-4'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mr-4'
+                : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 mr-4 border border-gray-200 dark:border-gray-600 shadow-sm'
             }`}
           >
             {message.content}
           </div>
         ))}
         {isLoading && (
-          <div className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-2 rounded-lg text-sm mr-4">
+          <div className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-2 rounded-lg text-sm mr-4 border border-gray-200 dark:border-gray-600 shadow-sm">
             Thinking...
           </div>
         )}

@@ -128,6 +128,19 @@ body {
   color: #ef4444 !important;
 }
 
+/* Assistant message text color overrides for light mode */
+.light .text-gray-900 {
+  color: #111827 !important;
+}
+
+.light .text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.light .text-gray-700 {
+  color: #374151 !important;
+}
+
 /* Panel resize handle */
 .light .dark\:bg-gray-700 {
   background-color: #e5e7eb !important;
