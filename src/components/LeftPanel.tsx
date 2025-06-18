@@ -6,19 +6,19 @@ import {
   FolderTree, 
   GitBranch, 
   Settings, 
-  Link, 
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
 import AssistantTab from './tabs/AssistantTab';
 import DirectoryTab from './tabs/DirectoryTab';
 import RepositoriesTab from './tabs/RepositoriesTab';
+import ConfigurationTab from './tabs/ConfigurationTab';
 
 interface LeftPanelProps {
   onGenerateDiagram: (code: string) => void;
 }
 
-type TabType = 'assistant' | 'directory' | 'repositories';
+type TabType = 'assistant' | 'directory' | 'repositories' | 'configuration';
 
 export default function LeftPanel({ onGenerateDiagram }: LeftPanelProps) {
   const [collapsedTabs, setCollapsedTabs] = useState<Set<TabType>>(new Set());
@@ -117,19 +117,28 @@ export default function LeftPanel({ onGenerateDiagram }: LeftPanelProps) {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="p-3 border-t border-gray-200 bg-white">
-        <div className="space-y-2">
-          <button className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">
-            <Settings className="w-4 h-4" />
-            <span>Configuration</span>
+        {/* Configuration Tab */}
+        <div className="border-b border-gray-200">
+          <button
+            onClick={() => toggleTab('configuration')}
+            className="w-full p-3 flex items-center justify-between hover:bg-gray-100 transition-colors"
+          >
+            <div className="flex items-center space-x-2">
+              <Settings className="w-4 h-4 text-gray-600" />
+              <span className="font-medium text-gray-700">Configuration</span>
+            </div>
+            {isCollapsed('configuration') ? (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            )}
           </button>
-          <button className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors">
-            <Link className="w-4 h-4" />
-            <span>Connect Repository</span>
-          </button>
+          {!isCollapsed('configuration') && (
+            <div className="px-3 pb-3">
+              <ConfigurationTab />
+            </div>
+          )}
         </div>
       </div>
     </div>
