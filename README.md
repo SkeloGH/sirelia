@@ -1,36 +1,142 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Siren - AI-Powered Code Visualization
+
+Siren is a Next.js application that generates and edits Mermaid diagrams with AI assistance and repository context. It provides a modern, intuitive interface for creating visual representations of code architecture and workflows.
+
+## Features
+
+### 🎯 Core Functionality
+- **AI-Powered Diagram Generation**: Use natural language to generate Mermaid diagrams from your codebase
+- **Real-time Mermaid Rendering**: Instant preview of diagrams as you edit
+- **CodeMirror Editor**: Advanced code editing with syntax highlighting and Mermaid support
+- **Repository Integration**: Connect to GitHub repositories for context-aware diagram generation
+
+### 🎨 User Interface
+- **Resizable Panels**: Flexible layout with collapsible and resizable panels
+- **Collapsible Tabs**: Organized sections for Assistant, Directory Navigator, and Repository Management
+- **Modern Design**: Clean, responsive interface built with Tailwind CSS
+- **Icon Library**: Beautiful icons from Lucide React
+
+### 🔧 Technical Stack
+- **Next.js 15**: App Router with TypeScript
+- **Tailwind CSS**: Utility-first styling
+- **CodeMirror 6**: Advanced code editor
+- **Mermaid**: Diagram rendering engine
+- **React Resizable Panels**: Flexible layout management
+- **AI SDK**: Chat and streaming capabilities
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
 
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd siren
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Run the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+## Usage
 
-To learn more about Next.js, take a look at the following resources:
+### Left Panel
+- **Assistant Tab**: Chat with AI to generate diagrams
+- **Directory Navigator**: Browse your repository structure
+- **Connected Repositories**: Manage repository connections
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Right Panel
+- **Mermaid Viewer**: See your diagrams rendered in real-time
+- **Code Editor**: Edit Mermaid syntax with full IDE features
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Quick Start
+1. Click "Generate Login Flow" in the Assistant tab
+2. View the generated diagram in the right panel
+3. Click "Edit Code" to modify the Mermaid syntax
+4. See real-time updates as you type
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/
+│   ├── api/
+│   │   └── chat/
+│   │       └── route.ts          # AI chat API endpoint
+│   │   ├── globals.css               # Global styles
+│   │   ├── layout.tsx                # Root layout
+│   │   └── page.tsx                  # Main application page
+│   ├── components/
+│   │   ├── tabs/
+│   │   │   ├── AssistantTab.tsx      # AI chat interface
+│   │   │   ├── DirectoryTab.tsx      # File tree navigator
+│   │   │   └── RepositoriesTab.tsx   # Repository management
+│   │   ├── CodeMirrorEditor.tsx      # Code editor component
+│   │   ├── LeftPanel.tsx             # Left panel with tabs
+│   │   └── RightPanel.tsx            # Diagram viewer and editor
+│   └──
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Configuration
+
+### AI Integration
+The application includes placeholder AI integration. To connect to a real AI provider:
+
+1. Update `src/app/api/chat/route.ts` with your AI provider credentials
+2. Configure the AI SDK in your environment variables
+3. Implement MCP (Model Context Protocol) for repository access
+
+### MCP Integration
+For full repository context access, implement MCP client integration:
+
+1. Install MCP client library
+2. Configure repository authentication
+3. Implement file listing and content retrieval methods
+
+## Development
+
+### Available Scripts
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+### Adding New Features
+1. Create components in `src/components/`
+2. Add API routes in `src/app/api/`
+3. Update types and interfaces as needed
+4. Test with hot reload enabled
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Roadmap
+
+- [ ] Full MCP integration for repository access
+- [ ] Advanced AI provider integration
+- [ ] Diagram templates and presets
+- [ ] Export functionality (PNG, SVG, PDF)
+- [ ] Collaboration features
+- [ ] Custom themes and styling
+- [ ] Plugin system for diagram types
