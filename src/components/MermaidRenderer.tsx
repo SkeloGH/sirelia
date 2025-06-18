@@ -58,26 +58,88 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
 
   // Clean up any stray Mermaid nodes that might have been appended outside the body
   const cleanupStrayMermaidNodes = () => {
-    // Remove any SVGs that Mermaid might have appended outside the body
-    const straySvgs = document.querySelectorAll('svg');
-    straySvgs.forEach(svg => {
-      if (!document.body.contains(svg) || svg.classList.contains('mermaid')) {
-        // Check if this is a Mermaid error SVG (usually has specific styling)
-        const isMermaidError = svg.style.width === '100%' || 
-                              svg.querySelector('text')?.textContent?.includes('Syntax error');
-        if (isMermaidError) {
+    // Only target elements that are clearly Mermaid-generated
+    // Look for elements with Mermaid-specific classes, IDs, or attributes
+    
+    // 1. Remove SVGs with Mermaid-specific classes or IDs
+    const mermaidSvgs = document.querySelectorAll('svg[id^="mermaid-"], svg.mermaid, svg[data-processed="true"]');
+    mermaidSvgs.forEach(svg => {
+      // Only remove if it's not in our container and has Mermaid-specific characteristics
+      if (!containerRef.current?.contains(svg)) {
+        const hasMermaidContent = svg.querySelector('.node, .edge, .label, .cluster') !== null;
+        const hasMermaidId = svg.id?.startsWith('mermaid-');
+        const hasMermaidClass = svg.classList.contains('mermaid');
+        
+        if (hasMermaidContent || hasMermaidId || hasMermaidClass) {
           svg.remove();
         }
       }
     });
 
-    // Remove any error messages Mermaid might have appended
-    const errorMessages = document.querySelectorAll('div, p');
-    errorMessages.forEach(element => {
-      if (!document.body.contains(element) || 
-          element.textContent?.includes('Syntax error') ||
-          element.textContent?.includes('No diagram type detected')) {
-        element.remove();
+    // 2. Remove error messages that are clearly Mermaid-generated
+    // Look for elements with specific Mermaid error patterns
+    const mermaidErrorSelectors = [
+      'div[class*="mermaid"]',
+      'div[id*="mermaid"]',
+      'p[class*="mermaid"]',
+      'p[id*="mermaid"]',
+      // Elements that contain Mermaid-specific error text
+      'div:not([class*="mermaid"]):not([id*="mermaid"]):not([data-mermaid])',
+      'p:not([class*="mermaid"]):not([id*="mermaid"]):not([data-mermaid])'
+    ];
+
+    mermaidErrorSelectors.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(element => {
+        // Only process elements that are not in our container
+        if (!containerRef.current?.contains(element)) {
+          const text = element.textContent || '';
+          const isMermaidError = (
+            text.includes('Syntax error') ||
+            text.includes('No diagram type detected') ||
+            text.includes('mermaid') ||
+            (element.classList.contains('mermaid') || element.id?.includes('mermaid'))
+          );
+          
+          // Additional safety check: only remove if element has no meaningful content
+          // or is clearly a Mermaid error element
+          const hasOnlyErrorText = text.trim().length < 200 && isMermaidError;
+          const isStandaloneError = element.children.length === 0 && hasOnlyErrorText;
+          
+          if (isStandaloneError || (isMermaidError && element.classList.contains('mermaid'))) {
+            element.remove();
+          }
+        }
+      });
+    });
+
+    // 3. Remove any elements that Mermaid might have appended directly to body
+    // but only if they have Mermaid-specific characteristics
+    const bodyChildren = Array.from(document.body.children);
+    bodyChildren.forEach(child => {
+      // Skip if it's our container or any legitimate app content
+      if (containerRef.current?.contains(child) || 
+          child.tagName === 'SCRIPT' || 
+          child.tagName === 'STYLE' ||
+          child.tagName === 'LINK' ||
+          child.id === 'root' ||
+          child.id === '__next' ||
+          child.classList.contains('app') ||
+          child.getAttribute('data-testid') ||
+          child.getAttribute('data-cy')) {
+        return;
+      }
+
+      // Only remove if it's clearly a Mermaid-generated element
+      const isMermaidElement = (
+        child.classList.contains('mermaid') ||
+        child.id?.startsWith('mermaid-') ||
+        (child.tagName === 'SVG' && child.querySelector('.node, .edge, .label, .cluster')) ||
+        (child.textContent?.includes('Syntax error') && child.children.length === 0)
+      );
+
+      if (isMermaidElement) {
+        child.remove();
       }
     });
   };
