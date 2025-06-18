@@ -14,20 +14,7 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-
-interface AIConfig {
-  provider: 'openai' | 'anthropic' | 'custom';
-  apiKey: string;
-  model: string;
-  temperature: number;
-  maxTokens: number;
-}
-
-interface RepositoryConfig {
-  url: string;
-  token: string;
-  isConnected: boolean;
-}
+import { AIConfig, RepositoryConfig } from '../../types/ai';
 
 export default function ConfigurationTab() {
   const [aiConfig, setAIConfig] = useState<AIConfig>({
