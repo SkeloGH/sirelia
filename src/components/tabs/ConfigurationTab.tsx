@@ -104,11 +104,8 @@ export default function ConfigurationTab() {
 
     // Load theme preference
     if (savedTheme) {
-      console.log('=== Loading saved theme from localStorage:', savedTheme);
       setThemeMode(savedTheme as 'light' | 'dark' | 'system');
       applyTheme(savedTheme as 'light' | 'dark' | 'system');
-    } else {
-      console.log('=== No saved theme found, using default (system)');
     }
   }, [applyTheme]);
 
@@ -133,11 +130,7 @@ export default function ConfigurationTab() {
 
   // Listen for theme changes from other components
   useEffect(() => {
-    const handleThemeChange = (event: CustomEvent) => {
-      console.log('=== Theme change event received:', event.detail);
-      const { isDark } = event.detail;
-      const newTheme = isDark ? 'dark' : 'light';
-      console.log('Setting theme mode to:', newTheme);
+    const handleThemeChange = () => {
       // Don't override the state if we're in the middle of a manual change
       // This prevents the event loop from interfering with user selections
     };
@@ -473,7 +466,6 @@ export default function ConfigurationTab() {
               <select
                 value={themeMode}
                 onChange={(e) => {
-                  console.log('=== Select onChange fired with value:', e.target.value);
                   handleThemeModeChange(e.target.value as 'light' | 'dark' | 'system');
                 }}
                 className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"

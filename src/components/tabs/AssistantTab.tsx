@@ -228,11 +228,11 @@ export default function AssistantTab({ onGenerateDiagram }: AssistantTabProps) {
       </div>
 
       {/* Quick Actions */}
-      <div className="space-y-2 flex-shrink-0">
+      <div className="flex flex-wrap gap-2 flex-shrink-0 text-xs font-medium">
         <button
           onClick={handleGenerateLoginFlow}
           disabled={!repoConfig?.isConnected}
-          className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 rounded-md transition-colors"
+          className="inline-flex items-center space-x-2 px-4 py-2 text-blue-600 bg-transparent border border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:border-gray-400 dark:disabled:border-gray-600 rounded-full transition-colors"
         >
           <Sparkles className="w-4 h-4" />
           <span>Generate Login Flow</span>
@@ -241,7 +241,7 @@ export default function AssistantTab({ onGenerateDiagram }: AssistantTabProps) {
         <button
           onClick={() => setInput('Generate a component architecture diagram for this codebase')}
           disabled={!aiConfig?.apiKey}
-          className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 rounded-md transition-colors"
+          className="inline-flex items-center space-x-2 px-4 py-2 text-gray-700 bg-transparent border border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700/50 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:border-gray-400 dark:disabled:border-gray-600 rounded-full transition-colors"
         >
           <Sparkles className="w-4 h-4" />
           <span>Component Architecture</span>
@@ -250,7 +250,7 @@ export default function AssistantTab({ onGenerateDiagram }: AssistantTabProps) {
         <button
           onClick={() => setInput('Create a database schema diagram')}
           disabled={!aiConfig?.apiKey}
-          className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 rounded-md transition-colors"
+          className="inline-flex items-center space-x-2 px-4 py-2 text-gray-700 bg-transparent border border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700/50 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:border-gray-400 dark:disabled:border-gray-600 rounded-full transition-colors"
         >
           <Sparkles className="w-4 h-4" />
           <span>Database Schema</span>
@@ -259,7 +259,7 @@ export default function AssistantTab({ onGenerateDiagram }: AssistantTabProps) {
         <button
           onClick={() => setInput('Show me a sequence diagram for the main user flow')}
           disabled={!aiConfig?.apiKey}
-          className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 rounded-md transition-colors"
+          className="inline-flex items-center space-x-2 px-4 py-2 text-gray-700 bg-transparent border border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700/50 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:border-gray-400 dark:disabled:border-gray-600 rounded-full transition-colors"
         >
           <Sparkles className="w-4 h-4" />
           <span>User Flow Sequence</span>
