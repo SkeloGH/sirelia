@@ -15,13 +15,11 @@ interface MCPMessage {
 }
 
 export class GitHubMCPClient {
-  private eventSource: EventSource | null = null;
   private config: MCPConfig | null = null;
   private connectionStatus: MCPConnectionStatus = {
     isConnected: false
   };
   private messageId = 1;
-  private pendingRequests = new Map<string | number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
 
   /**
    * Connect to GitHub Copilot MCP server
@@ -32,51 +30,9 @@ export class GitHubMCPClient {
       
       console.log('GitHub MCP: Connecting to:', config.serverUrl);
       
-      // Create EventSource for SSE transport
-      const url = new URL(config.serverUrl);
-      if (config.token) {
-        url.searchParams.set('token', config.token);
-      }
-      
-      this.eventSource = new EventSource(url.toString());
-      
-      // Set up event handlers
-      this.eventSource.onopen = () => {
-        console.log('GitHub MCP: SSE connection opened');
-        this.connectionStatus.isConnected = true;
-        this.connectionStatus.serverUrl = config.serverUrl;
-      };
-      
-      this.eventSource.onmessage = (event) => {
-        this.handleMessage(event.data);
-      };
-      
-      this.eventSource.onerror = (error) => {
-        console.error('GitHub MCP: SSE error:', error);
-        this.connectionStatus.error = 'SSE connection error';
-        this.connectionStatus.isConnected = false;
-      };
-      
-      // Wait for connection to establish
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout'));
-        }, 10000);
-        
-        this.eventSource!.onopen = () => {
-          clearTimeout(timeout);
-          resolve();
-        };
-        
-        this.eventSource!.onerror = (error) => {
-          clearTimeout(timeout);
-          reject(new Error(`Connection failed: ${error}`));
-        };
-      });
-      
-      // Test connection by getting server info
+      // Test connection by sending an initialize request
       try {
-        await this.request({
+        const response = await this.request({
           method: 'initialize',
           params: {
             protocolVersion: '2024-11-05',
@@ -90,7 +46,14 @@ export class GitHubMCPClient {
           }
         });
         
-        console.log('GitHub MCP: Connection established successfully');
+        console.log('GitHub MCP: Connection established successfully', response);
+        
+        this.connectionStatus = {
+          isConnected: true,
+          serverUrl: config.serverUrl,
+          capabilities: ['tools']
+        };
+        
         return this.connectionStatus;
         
       } catch (error) {
@@ -113,8 +76,8 @@ export class GitHubMCPClient {
    * Send a request and wait for response
    */
   private async request(request: { method: string; params?: Record<string, unknown> }): Promise<unknown> {
-    if (!this.eventSource) {
-      throw new Error('Not connected to MCP server');
+    if (!this.config) {
+      throw new Error('Not configured');
     }
 
     const id = this.messageId++;
@@ -125,45 +88,32 @@ export class GitHubMCPClient {
       params: request.params
     };
 
-    return new Promise((resolve, reject) => {
-      this.pendingRequests.set(id, { resolve, reject });
-      
-      // Send message via POST request since SSE is read-only
-      fetch(this.config!.serverUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(this.config!.token && { 'Authorization': `Bearer ${this.config!.token}` })
-        },
-        body: JSON.stringify(message)
-      }).catch(error => {
-        this.pendingRequests.delete(id);
-        reject(error);
-      });
-    });
-  }
+    console.log('GitHub MCP: Sending request:', message);
 
-  /**
-   * Handle incoming messages
-   */
-  private handleMessage(data: string) {
-    try {
-      const message: MCPMessage = JSON.parse(data);
-      console.log('GitHub MCP: Received message:', message);
-      
-      if (message.id && this.pendingRequests.has(message.id)) {
-        const { resolve, reject } = this.pendingRequests.get(message.id)!;
-        this.pendingRequests.delete(message.id);
-        
-        if (message.error) {
-          reject(new Error(message.error.message));
-        } else {
-          resolve(message.result);
-        }
-      }
-    } catch (error) {
-      console.error('GitHub MCP: Failed to parse message:', error);
+    const response = await fetch(this.config.serverUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...(this.config.token && { 'Authorization': `Bearer ${this.config.token}` }),
+        ...(this.config.headers || {})
+      },
+      body: JSON.stringify(message)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
+
+    const responseData = await response.json();
+    console.log('GitHub MCP: Received response:', responseData);
+
+    if (responseData.error) {
+      throw new Error(`MCP Error: ${responseData.error.message}`);
+    }
+
+    return responseData.result;
   }
 
   /**
@@ -207,26 +157,14 @@ export class GitHubMCPClient {
    * Check if connected
    */
   isConnected(): boolean {
-    return this.connectionStatus.isConnected && this.eventSource?.readyState === EventSource.OPEN;
+    return this.connectionStatus.isConnected;
   }
 
   /**
-   * Close the connection
+   * Close connection
    */
   async close(): Promise<void> {
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
-    }
-    
-    this.connectionStatus = {
-      isConnected: false
-    };
-    
-    // Reject all pending requests
-    for (const { reject } of this.pendingRequests.values()) {
-      reject(new Error('Connection closed'));
-    }
-    this.pendingRequests.clear();
+    this.connectionStatus.isConnected = false;
+    this.config = null;
   }
 } 

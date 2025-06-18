@@ -55,17 +55,24 @@ async function handleConnect(config: MCPConfig) {
       repositoryService = new RepositoryService();
     }
 
-    const success = await repositoryService.connectToGitHub(config);
-    
-    if (success) {
-      const status = repositoryService.getConnectionStatus();
-      return NextResponse.json({ success: true, status });
-    } else {
-      return NextResponse.json(
-        { error: 'Failed to connect to MCP server' },
-        { status: 500 }
-      );
+    let status = null;
+    let errorMsg = null;
+    try {
+      const success = await repositoryService.connectToGitHub(config);
+      status = repositoryService.getConnectionStatus();
+      if (success) {
+        return NextResponse.json({ success: true, status });
+      } else {
+        errorMsg = status?.error || 'Failed to connect to MCP server';
+      }
+    } catch (error) {
+      status = repositoryService.getConnectionStatus();
+      errorMsg = error instanceof Error ? error.message : String(error);
     }
+    return NextResponse.json(
+      { error: errorMsg || 'Failed to connect to MCP server', status },
+      { status: 500 }
+    );
   } catch (error) {
     console.error('Connect error:', error);
     return NextResponse.json(

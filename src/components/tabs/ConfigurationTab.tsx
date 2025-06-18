@@ -15,8 +15,15 @@ import {
   Moon,
   Server
 } from 'lucide-react';
-import { AIConfig, RepositoryConfig, MCPConfig } from '../../types/ai';
+import { AIConfig, RepositoryConfig, MCPConfig, RepositoriesState } from '../../types/ai';
 import { showToast } from '../Toast';
+
+// Status indicator component
+function StatusIndicator({ color, title }: { color: string; title: string }) {
+  return (
+    <span className={`w-2 h-2 rounded-full ${color} ml-2`} title={title}></span>
+  );
+}
 
 export default function ConfigurationTab() {
   const [aiConfig, setAIConfig] = useState<AIConfig>({
@@ -33,12 +40,18 @@ export default function ConfigurationTab() {
     isConnected: false
   });
 
+  const [repositoriesState, setRepositoriesState] = useState<RepositoriesState>({
+    repositories: [],
+    activeRepositoryId: undefined
+  });
+
   const [mcpConfig, setMcpConfig] = useState<MCPConfig>({
     serverUrl: '',
     token: '',
     headers: {},
     name: 'sirelia-mcp-client',
-    isEnabled: false
+    isEnabled: false,
+    isConnected: false
   });
 
   const [isConnecting, setIsConnecting] = useState(false);
@@ -89,7 +102,7 @@ export default function ConfigurationTab() {
   // Load saved configuration on mount
   useEffect(() => {
     const savedAIConfig = localStorage.getItem('sirelia-ai-config');
-    const savedRepoConfig = localStorage.getItem('sirelia-repo-config');
+    const savedReposState = localStorage.getItem('sirelia-repositories-state');
     const savedMCPConfig = localStorage.getItem('sirelia-mcp-config');
     const savedTheme = localStorage.getItem('sirelia-theme');
     
@@ -102,12 +115,12 @@ export default function ConfigurationTab() {
       }
     }
     
-    if (savedRepoConfig) {
+    if (savedReposState) {
       try {
-        const parsed = JSON.parse(savedRepoConfig);
-        setRepoConfig(parsed);
+        const parsed = JSON.parse(savedReposState);
+        setRepositoriesState(parsed);
       } catch (error) {
-        console.error('Failed to load repo config:', error);
+        console.error('Failed to load repositories state:', error);
       }
     }
 
@@ -126,6 +139,27 @@ export default function ConfigurationTab() {
       applyTheme(savedTheme as 'light' | 'dark' | 'system');
     }
   }, [applyTheme]);
+
+  // Listen for MCP connection events to update state
+  useEffect(() => {
+    const handleMCPConnected = () => {
+      const savedMCPConfig = localStorage.getItem('sirelia-mcp-config');
+      if (savedMCPConfig) {
+        try {
+          const parsed = JSON.parse(savedMCPConfig);
+          setMcpConfig(parsed);
+        } catch (error) {
+          console.error('Failed to parse MCP config:', error);
+        }
+      }
+    };
+
+    window.addEventListener('mcpConnected', handleMCPConnected);
+    
+    return () => {
+      window.removeEventListener('mcpConnected', handleMCPConnected);
+    };
+  }, []);
 
   // Detect system theme and listen for changes
   useEffect(() => {
@@ -212,22 +246,59 @@ export default function ConfigurationTab() {
         throw new Error('Please provide a valid GitHub repository URL');
       }
 
-      // Update state and localStorage BEFORE dispatching event
-      const updatedRepoConfig = { ...repoConfig, isConnected: true };
-      setRepoConfig(updatedRepoConfig);
+      // Extract repository name and owner from URL
+      const urlParts = repoConfig.url.split('/');
+      const owner = urlParts[urlParts.length - 2];
+      const name = urlParts[urlParts.length - 1];
+
+      // Create new repository config
+      const newRepo: RepositoryConfig = {
+        url: repoConfig.url,
+        token: repoConfig.token,
+        isConnected: true,
+        name: name,
+        owner: owner,
+        isActive: repositoriesState.repositories.length === 0 // First repo becomes active
+      };
+
+      // Update repositories state
+      const updatedRepositories = [...repositoriesState.repositories];
       
-      // Store configuration (in a real app, this would be saved to backend/database)
-      localStorage.setItem('sirelia-ai-config', JSON.stringify(aiConfig));
-      localStorage.setItem('sirelia-repo-config', JSON.stringify(updatedRepoConfig));
+      // If this is the first repository, make it active
+      if (updatedRepositories.length === 0) {
+        newRepo.isActive = true;
+        updatedRepositories.push(newRepo);
+      } else {
+        // Check if repository already exists
+        const existingIndex = updatedRepositories.findIndex(repo => repo.url === repoConfig.url);
+        if (existingIndex >= 0) {
+          // Update existing repository
+          updatedRepositories[existingIndex] = { ...newRepo, isActive: updatedRepositories[existingIndex].isActive };
+        } else {
+          // Add new repository (not active by default)
+          updatedRepositories.push(newRepo);
+        }
+      }
+
+      const newRepositoriesState: RepositoriesState = {
+        repositories: updatedRepositories,
+        activeRepositoryId: newRepo.isActive ? newRepo.url : repositoriesState.activeRepositoryId
+      };
+
+      setRepositoriesState(newRepositoriesState);
+      localStorage.setItem('sirelia-repositories-state', JSON.stringify(newRepositoriesState));
+      
+      // Clear the form
+      setRepoConfig({ url: '', token: '', isConnected: false });
       
       // Show success toast
       showToast({
         type: 'success',
-        title: 'Repository Connected',
-        message: 'Successfully connected to repository'
+        title: 'Repository Added',
+        message: `Successfully added ${name} repository`
       });
       
-      // Trigger refresh in other tabs AFTER localStorage is updated
+      // Trigger refresh in other tabs
       window.dispatchEvent(new CustomEvent('repositoryConnected'));
       
     } catch (error: unknown) {
@@ -240,13 +311,6 @@ export default function ConfigurationTab() {
     } finally {
       setIsConnecting(false);
     }
-  };
-
-  const disconnectRepository = () => {
-    setRepoConfig(prev => ({ ...prev, isConnected: false, url: '', token: '' }));
-    localStorage.removeItem('sirelia-repo-config');
-    // Trigger refresh in other tabs
-    window.dispatchEvent(new CustomEvent('repositoryConnected'));
   };
 
   const saveConfiguration = () => {
@@ -283,7 +347,7 @@ export default function ConfigurationTab() {
       
       if (result.success) {
         // Update state and localStorage
-        const updatedMcpConfig = { ...mcpConfig, isEnabled: true };
+        const updatedMcpConfig = { ...mcpConfig, isEnabled: true, isConnected: true };
         setMcpConfig(updatedMcpConfig);
         localStorage.setItem('sirelia-mcp-config', JSON.stringify(updatedMcpConfig));
         
@@ -340,7 +404,7 @@ export default function ConfigurationTab() {
       });
 
       if (response.ok) {
-        const updatedMcpConfig = { ...mcpConfig, isEnabled: false };
+        const updatedMcpConfig = { ...mcpConfig, isEnabled: false, isConnected: false };
         setMcpConfig(updatedMcpConfig);
         localStorage.setItem('sirelia-mcp-config', JSON.stringify(updatedMcpConfig));
         window.dispatchEvent(new CustomEvent('mcpConnected'));
@@ -371,64 +435,48 @@ export default function ConfigurationTab() {
         
         {!isCollapsed('repository') && (
           <div className="px-3 pb-3 space-y-3">
-            {!repoConfig.isConnected ? (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Repository URL
-                  </label>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Repository URL
+                </label>
+                <input
+                  type="url"
+                  value={repoConfig.url}
+                  onChange={(e) => handleRepoConfigChange('url', e.target.value)}
+                  placeholder="https://github.com/username/repository"
+                  className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Access Token (Optional for public repos)
+                </label>
+                <div className="relative">
                   <input
-                    type="url"
-                    value={repoConfig.url}
-                    onChange={(e) => handleRepoConfigChange('url', e.target.value)}
-                    placeholder="https://github.com/username/repository"
-                    className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
+                    type="password"
+                    value={repoConfig.token}
+                    onChange={(e) => handleRepoConfigChange('token', e.target.value)}
+                    placeholder="GitHub Personal Access Token"
+                    className="text-black dark:text-white w-full px-3 py-2 pr-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
                   />
+                  <Key className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute right-3 top-2.5" />
                 </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Access Token (Optional for public repos)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      value={repoConfig.token}
-                      onChange={(e) => handleRepoConfigChange('token', e.target.value)}
-                      placeholder="GitHub Personal Access Token"
-                      className="text-black dark:text-white w-full px-3 py-2 pr-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-                    />
-                    <Key className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute right-3 top-2.5" />
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Required for private repos. For public repos, provides higher rate limits.
-                  </p>
-                </div>
-                
-                <button
-                  onClick={connectRepository}
-                  disabled={isConnecting || !repoConfig.url}
-                  className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded-md transition-colors"
-                >
-                  <Link className="w-4 h-4" />
-                  <span>{isConnecting ? 'Connecting...' : 'Connect Repository'}</span>
-                </button>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Required for private repos. For public repos, provides higher rate limits.
+                </p>
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-md">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-green-700">Repository connected</span>
-                </div>
-                <button
-                  onClick={disconnectRepository}
-                  className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors"
-                >
-                  <Link2Off className="w-4 h-4" />
-                  <span>Disconnect Repository</span>
-                </button>
-              </div>
-            )}
+              
+              <button
+                onClick={connectRepository}
+                disabled={isConnecting || !repoConfig.url}
+                className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded-md transition-colors"
+              >
+                <Link className="w-4 h-4" />
+                <span>{isConnecting ? 'Adding...' : 'Add Repository'}</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -442,6 +490,13 @@ export default function ConfigurationTab() {
           <div className="flex items-center space-x-2">
             <Bot className="w-4 h-4 text-gray-600 dark:text-gray-400" />
             <span className="font-medium text-gray-700 dark:text-gray-300">AI Agent Configuration</span>
+            {/* AI status indicator */}
+            {(() => {
+              if (!aiConfig.apiKey) {
+                return <StatusIndicator color="bg-gray-400" title="Not Configured" />;
+              }
+              return <StatusIndicator color="bg-green-500" title="Configured" />;
+            })()}
           </div>
           {isCollapsed('ai') ? (
             <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -556,6 +611,16 @@ export default function ConfigurationTab() {
           <div className="flex items-center space-x-2">
             <Server className="w-4 h-4 text-gray-600 dark:text-gray-400" />
             <span className="font-medium text-gray-700 dark:text-gray-300">MCP Configuration</span>
+            {/* MCP status indicator */}
+            {(() => {
+              if (!mcpConfig.serverUrl || !mcpConfig.isEnabled) {
+                return <StatusIndicator color="bg-gray-400" title="Not Configured" />;
+              }
+              if (mcpConfig.isConnected) {
+                return <StatusIndicator color="bg-green-500" title="Connected" />;
+              }
+              return <StatusIndicator color="bg-red-500" title="Not Connected" />;
+            })()}
           </div>
           {isCollapsed('mcp') ? (
             <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
