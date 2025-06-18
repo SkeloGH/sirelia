@@ -13,6 +13,71 @@ export class RepositoryService {
   }
 
   /**
+   * Safely call a tool on the standard MCP client
+   * 
+   * Note: According to the AI SDK documentation (https://ai-sdk.dev/docs/reference/ai-sdk-core/create-mcp-client),
+   * the MCP client is primarily designed to work with generateText for tool conversion between MCP tools and AI SDK tools.
+   * Direct tool calling is not the primary use case, but we provide this method as a fallback.
+   */
+  private async safeCallStandardTool(toolName: string, args: Record<string, unknown>): Promise<unknown> {
+    const client = this.mcpService.getClient();
+    
+    if (!client) {
+      throw new Error('MCP client not available');
+    }
+
+    try {
+      // Get the tools from the client
+      const tools = await client.tools();
+      
+      // Check if the tool exists
+      if (!(toolName in tools)) {
+        throw new Error(`Tool '${toolName}' not found in available tools: ${Object.keys(tools).join(', ')}`);
+      }
+
+      const tool = tools[toolName];
+      
+      // The AI SDK MCP client tools are designed to work with generateText
+      // For direct tool execution, we need to access the underlying tool implementation
+      if (typeof tool.execute === 'function') {
+        // Use type assertion to avoid complex type issues with the AI SDK
+        // The AI SDK has complex generic types that make direct calling difficult
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return await (tool.execute as any)(args);
+      }
+      
+      throw new Error(`Tool '${toolName}' does not have an execute method`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown tool call error';
+      throw new Error(`Failed to call tool '${toolName}': ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Find a tool by name pattern
+   */
+  private async findToolByPattern(patterns: string[]): Promise<string | null> {
+    try {
+      const tools = await this.mcpService.getTools();
+      const toolNames = Object.keys(tools);
+      
+      for (const pattern of patterns) {
+        const found = toolNames.find(tool => 
+          tool.toLowerCase().includes(pattern.toLowerCase())
+        );
+        if (found) {
+          return found;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Failed to find tool by pattern:', error);
+      return null;
+    }
+  }
+
+  /**
    * Connect to a GitHub MCP server
    */
   async connectToGitHub(config: MCPConfig): Promise<boolean> {
@@ -58,24 +123,12 @@ export class RepositoryService {
       }
 
       try {
-        const tools = await this.mcpService.getTools();
-        
         // Look for repository info tools
-        const repoInfoTool = Object.keys(tools).find(tool => 
-          tool.toLowerCase().includes('repository') || 
-          tool.toLowerCase().includes('repo')
-        );
+        const repoInfoTool = await this.findToolByPattern(['repository', 'repo']);
 
         if (repoInfoTool) {
-          const client = this.mcpService.getClient();
-          if (client) {
-            // Use the underlying client to call the tool
-            const result = await (client as unknown as { callTool: (params: { name: string; args: Record<string, unknown> }) => Promise<unknown> }).callTool({
-              name: repoInfoTool,
-              args: { owner, repo }
-            });
-            return result as MCPRepositoryInfo;
-          }
+          const result = await this.safeCallStandardTool(repoInfoTool, { owner, repo });
+          return result as MCPRepositoryInfo;
         }
 
         return null;
@@ -108,24 +161,12 @@ export class RepositoryService {
       }
 
       try {
-        const tools = await this.mcpService.getTools();
-        
         // Look for file content tools
-        const fileTool = Object.keys(tools).find(tool => 
-          tool.toLowerCase().includes('file') || 
-          tool.toLowerCase().includes('content') ||
-          tool.toLowerCase().includes('read')
-        );
+        const fileTool = await this.findToolByPattern(['file', 'content', 'read']);
 
         if (fileTool) {
-          const client = this.mcpService.getClient();
-          if (client) {
-            const result = await (client as unknown as { callTool: (params: { name: string; args: Record<string, unknown> }) => Promise<unknown> }).callTool({
-              name: fileTool,
-              args: { owner, repo, path }
-            });
-            return (result as { content?: string; data?: string })?.content || (result as { content?: string; data?: string })?.data || null;
-          }
+          const result = await this.safeCallStandardTool(fileTool, { owner, repo, path });
+          return (result as { content?: string; data?: string })?.content || (result as { content?: string; data?: string })?.data || null;
         }
 
         return null;
@@ -158,24 +199,12 @@ export class RepositoryService {
       }
 
       try {
-        const tools = await this.mcpService.getTools();
-        
         // Look for file listing tools
-        const listTool = Object.keys(tools).find(tool => 
-          tool.toLowerCase().includes('list') || 
-          tool.toLowerCase().includes('files') ||
-          tool.toLowerCase().includes('directory')
-        );
+        const listTool = await this.findToolByPattern(['list', 'files', 'directory']);
 
         if (listTool) {
-          const client = this.mcpService.getClient();
-          if (client) {
-            const result = await (client as unknown as { callTool: (params: { name: string; args: Record<string, unknown> }) => Promise<unknown> }).callTool({
-              name: listTool,
-              args: { owner, repo, path }
-            });
-            return Array.isArray(result) ? result as MCPFileInfo[] : [];
-          }
+          const result = await this.safeCallStandardTool(listTool, { owner, repo, path });
+          return Array.isArray(result) ? result as MCPFileInfo[] : [];
         }
 
         return [];
@@ -211,27 +240,15 @@ export class RepositoryService {
       }
 
       try {
-        const tools = await this.mcpService.getTools();
-        
         // Look for commit history tools
-        const commitTool = Object.keys(tools).find(tool => 
-          tool.toLowerCase().includes('commit') || 
-          tool.toLowerCase().includes('history') ||
-          tool.toLowerCase().includes('log')
-        );
+        const commitTool = await this.findToolByPattern(['commit', 'history', 'log']);
 
         if (commitTool) {
-          const client = this.mcpService.getClient();
-          if (client) {
-            const args: Record<string, unknown> = { owner, repo };
-            if (path) args.path = path;
-            
-            const result = await (client as unknown as { callTool: (params: { name: string; args: Record<string, unknown> }) => Promise<unknown> }).callTool({
-              name: commitTool,
-              args
-            });
-            return Array.isArray(result) ? result as MCPGitCommit[] : [];
-          }
+          const args: Record<string, unknown> = { owner, repo };
+          if (path) args.path = path;
+          
+          const result = await this.safeCallStandardTool(commitTool, args);
+          return Array.isArray(result) ? result as MCPGitCommit[] : [];
         }
 
         return [];
