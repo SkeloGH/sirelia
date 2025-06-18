@@ -1,26 +1,148 @@
 @import "tailwindcss";
 
+/* Theme system using explicit light/dark classes */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Default to light theme */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-tertiary: #6b7280;
+  --border-primary: #d1d5db;
+  --border-secondary: #e5e7eb;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Dark theme variables */
+.dark {
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-tertiary: #374151;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --border-primary: #4b5563;
+  --border-secondary: #6b7280;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Light theme override (explicit light class) - overrides system dark preference */
+.light {
+  --bg-primary: #ffffff !important;
+  --bg-secondary: #f9fafb !important;
+  --bg-tertiary: #f3f4f6 !important;
+  --text-primary: #111827 !important;
+  --text-secondary: #374151 !important;
+  --text-tertiary: #6b7280 !important;
+  --border-primary: #d1d5db !important;
+  --border-secondary: #e5e7eb !important;
+}
+
+/* Ensure light class overrides dark class when both are present */
+.light.dark {
+  --bg-primary: #ffffff !important;
+  --bg-secondary: #f9fafb !important;
+  --bg-tertiary: #f3f4f6 !important;
+  --text-primary: #111827 !important;
+  --text-secondary: #374151 !important;
+  --text-tertiary: #6b7280 !important;
+  --border-primary: #d1d5db !important;
+  --border-secondary: #e5e7eb !important;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Comprehensive Tailwind overrides for light theme */
+
+/* Background colors */
+.light .dark\:bg-gray-900 {
+  background-color: #ffffff !important;
+}
+
+.light .dark\:bg-gray-800 {
+  background-color: #f9fafb !important;
+}
+
+.light .dark\:bg-gray-700 {
+  background-color: #f3f4f6 !important;
+}
+
+.light .dark\:bg-gray-600 {
+  background-color: #e5e7eb !important;
+}
+
+/* Text colors */
+.light .dark\:text-white {
+  color: #111827 !important;
+}
+
+.light .dark\:text-gray-300 {
+  color: #374151 !important;
+}
+
+.light .dark\:text-gray-400 {
+  color: #6b7280 !important;
+}
+
+.light .dark\:text-gray-500 {
+  color: #6b7280 !important;
+}
+
+/* Border colors */
+.light .dark\:border-gray-700 {
+  border-color: #d1d5db !important;
+}
+
+.light .dark\:border-gray-600 {
+  border-color: #e5e7eb !important;
+}
+
+/* Hover states */
+.light .dark\:hover\:bg-gray-700:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.light .dark\:hover\:bg-gray-600:hover {
+  background-color: #e5e7eb !important;
+}
+
+/* Focus states */
+.light .dark\:focus\:ring-blue-500:focus {
+  --tw-ring-color: #3b82f6 !important;
+}
+
+/* Disabled states */
+.light .dark\:disabled\:bg-gray-400:disabled {
+  background-color: #9ca3af !important;
+}
+
+/* Additional specific overrides for components */
+.light .dark\:text-red-400 {
+  color: #dc2626 !important;
+}
+
+.light .dark\:text-red-500 {
+  color: #ef4444 !important;
+}
+
+/* Panel resize handle */
+.light .dark\:bg-gray-700 {
+  background-color: #e5e7eb !important;
+}
+
+.light .dark\:hover\:bg-gray-600:hover {
+  background-color: #d1d5db !important;
+}
+
+/* Hide scrollbars while maintaining scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
 }

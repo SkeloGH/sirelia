@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Link, 
   Link2Off, 
@@ -10,7 +10,9 @@ import {
   Save,
   CheckCircle,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface AIConfig {
@@ -43,7 +45,32 @@ export default function ConfigurationTab() {
   });
 
   const [isConnecting, setIsConnecting] = useState(false);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['repository', 'ai']));
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['repository', 'ai', 'theme']));
+  const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'system'>('system');
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('light');
+
+  // Apply theme based on mode
+  const applyTheme = useCallback((mode: 'light' | 'dark' | 'system') => {
+    let shouldBeDark = false;
+    if (mode === 'system') {
+      shouldBeDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } else if (mode === 'dark') {
+      shouldBeDark = true;
+    } else {
+      shouldBeDark = false;
+    }
+    // Remove both classes, then add the correct one
+    document.documentElement.classList.remove('dark', 'light');
+    if (shouldBeDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.add('light');
+    }
+    localStorage.setItem('sirelia-theme', mode);
+    if (mode === 'system') {
+      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDark: shouldBeDark } }));
+    }
+  }, []);
 
   // Model options for each provider
   const modelOptions = {
@@ -68,6 +95,7 @@ export default function ConfigurationTab() {
   useEffect(() => {
     const savedAIConfig = localStorage.getItem('sirelia-ai-config');
     const savedRepoConfig = localStorage.getItem('sirelia-repo-config');
+    const savedTheme = localStorage.getItem('sirelia-theme');
     
     if (savedAIConfig) {
       try {
@@ -86,7 +114,61 @@ export default function ConfigurationTab() {
         console.error('Failed to load repo config:', error);
       }
     }
+
+    // Load theme preference
+    if (savedTheme) {
+      console.log('=== Loading saved theme from localStorage:', savedTheme);
+      setThemeMode(savedTheme as 'light' | 'dark' | 'system');
+      applyTheme(savedTheme as 'light' | 'dark' | 'system');
+    } else {
+      console.log('=== No saved theme found, using default (system)');
+    }
+  }, [applyTheme]);
+
+  // Detect system theme and listen for changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setSystemTheme(mediaQuery.matches ? 'dark' : 'light');
+
+    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+      setSystemTheme(e.matches ? 'dark' : 'light');
+      if (themeMode === 'system') {
+        applyTheme('system');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+    
+    return () => {
+      mediaQuery.removeEventListener('change', handleSystemThemeChange);
+    };
+  }, [themeMode, applyTheme]);
+
+  // Listen for theme changes from other components
+  useEffect(() => {
+    const handleThemeChange = (event: CustomEvent) => {
+      console.log('=== Theme change event received:', event.detail);
+      const { isDark } = event.detail;
+      const newTheme = isDark ? 'dark' : 'light';
+      console.log('Setting theme mode to:', newTheme);
+      // Don't override the state if we're in the middle of a manual change
+      // This prevents the event loop from interfering with user selections
+    };
+
+    window.addEventListener('themeChanged', handleThemeChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('themeChanged', handleThemeChange as EventListener);
+    };
   }, []);
+
+  // Handle theme mode change
+  const handleThemeModeChange = (mode: 'light' | 'dark' | 'system') => {
+    setThemeMode(mode);
+    applyTheme(mode);
+    const shouldBeDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDark: shouldBeDark } }));
+  };
 
   const toggleSection = (section: string) => {
     const newCollapsed = new Set(collapsedSections);
@@ -169,19 +251,19 @@ export default function ConfigurationTab() {
   return (
     <div className="space-y-4">
       {/* Repository Connection Section */}
-      <div className="border border-gray-200 rounded-md bg-white">
+      <div className="border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800">
         <button
           onClick={() => toggleSection('repository')}
-          className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
           <div className="flex items-center space-x-2">
-            <Github className="w-4 h-4 text-gray-600" />
-            <span className="font-medium text-gray-700">Repository Connection</span>
+            <Github className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            <span className="font-medium text-gray-700 dark:text-gray-300">Repository Connection</span>
           </div>
           {isCollapsed('repository') ? (
-            <ChevronRight className="w-4 h-4 text-gray-500" />
+            <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-500" />
+            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           )}
         </button>
         
@@ -190,7 +272,7 @@ export default function ConfigurationTab() {
             {!repoConfig.isConnected ? (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                     Repository URL
                   </label>
                   <input
@@ -198,12 +280,12 @@ export default function ConfigurationTab() {
                     value={repoConfig.url}
                     onChange={(e) => handleRepoConfigChange('url', e.target.value)}
                     placeholder="https://github.com/username/repository"
-                    className="text-black w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                     Access Token (Optional for public repos)
                   </label>
                   <div className="relative">
@@ -212,11 +294,11 @@ export default function ConfigurationTab() {
                       value={repoConfig.token}
                       onChange={(e) => handleRepoConfigChange('token', e.target.value)}
                       placeholder="GitHub Personal Access Token"
-                      className="text-black w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="text-black dark:text-white w-full px-3 py-2 pr-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
                     />
-                    <Key className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" />
+                    <Key className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute right-3 top-2.5" />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Required for private repos. For public repos, provides higher rate limits.
                   </p>
                 </div>
@@ -250,32 +332,32 @@ export default function ConfigurationTab() {
       </div>
 
       {/* AI Configuration Section */}
-      <div className="border border-gray-200 rounded-md bg-white">
+      <div className="border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800">
         <button
           onClick={() => toggleSection('ai')}
-          className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
           <div className="flex items-center space-x-2">
-            <Bot className="w-4 h-4 text-gray-600" />
-            <span className="font-medium text-gray-700">AI Agent Configuration</span>
+            <Bot className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            <span className="font-medium text-gray-700 dark:text-gray-300">AI Agent Configuration</span>
           </div>
           {isCollapsed('ai') ? (
-            <ChevronRight className="w-4 h-4 text-gray-500" />
+            <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-500" />
+            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           )}
         </button>
         
         {!isCollapsed('ai') && (
           <div className="px-3 pb-3 space-y-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                 AI Provider
               </label>
               <select
                 value={aiConfig.provider}
                 onChange={(e) => handleAIConfigChange('provider', e.target.value as AIConfig['provider'])}
-                className="text-black w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
               >
                 <option value="openai">OpenAI</option>
                 <option value="anthropic">Anthropic</option>
@@ -284,13 +366,13 @@ export default function ConfigurationTab() {
             </div>
             
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                 Model
               </label>
               <select
                 value={aiConfig.model}
                 onChange={(e) => handleAIConfigChange('model', e.target.value)}
-                className="text-black w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
               >
                 {modelOptions[aiConfig.provider].map(option => (
                   <option key={option.value} value={option.value}>
@@ -301,7 +383,7 @@ export default function ConfigurationTab() {
             </div>
             
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                 API Key
               </label>
               <div className="relative">
@@ -310,15 +392,15 @@ export default function ConfigurationTab() {
                   value={aiConfig.apiKey}
                   onChange={(e) => handleAIConfigChange('apiKey', e.target.value)}
                   placeholder="Enter your API key"
-                  className="text-black w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="text-black dark:text-white w-full px-3 py-2 pr-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400"
                 />
-                <Key className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" />
+                <Key className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute right-3 top-2.5" />
               </div>
             </div>
             
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                   Temperature ({aiConfig.temperature})
                 </label>
                 <input
@@ -330,14 +412,14 @@ export default function ConfigurationTab() {
                   onChange={(e) => handleAIConfigChange('temperature', parseFloat(e.target.value))}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                   <span>Focused</span>
                   <span>Creative</span>
                 </div>
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                   Max Tokens
                 </label>
                 <input
@@ -347,7 +429,7 @@ export default function ConfigurationTab() {
                   step="100"
                   value={aiConfig.maxTokens}
                   onChange={(e) => handleAIConfigChange('maxTokens', parseInt(e.target.value))}
-                  className="text-black w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
                 />
               </div>
             </div>
@@ -359,6 +441,88 @@ export default function ConfigurationTab() {
               <Save className="w-4 h-4" />
               <span>Save Configuration</span>
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* Interface Settings Section */}
+      <div className="border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800">
+        <button
+          onClick={() => toggleSection('theme')}
+          className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          <div className="flex items-center space-x-2">
+            {themeMode === 'dark' ? (
+              <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            ) : themeMode === 'light' ? (
+              <Sun className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            ) : (
+              systemTheme === 'dark' ? (
+                <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              ) : (
+                <Sun className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              )
+            )}
+            <span className="font-medium text-gray-700 dark:text-gray-300">Interface Settings</span>
+          </div>
+          {isCollapsed('theme') ? (
+            <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          )}
+        </button>
+        
+        {!isCollapsed('theme') && (
+          <div className="px-3 pb-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Theme Mode
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Switch between light, dark, and system themes
+                </p>
+              </div>
+              <select
+                value={themeMode}
+                onChange={(e) => {
+                  console.log('=== Select onChange fired with value:', e.target.value);
+                  handleThemeModeChange(e.target.value as 'light' | 'dark' | 'system');
+                }}
+                className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">System</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md">
+              {themeMode === 'dark' ? (
+                <>
+                  <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Dark theme is active</span>
+                </>
+              ) : themeMode === 'light' ? (
+                <>
+                  <Sun className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Light theme is active</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-4 h-4 text-gray-600 dark:text-gray-400">
+                    {systemTheme === 'dark' ? (
+                      <Moon className="w-4 h-4" />
+                    ) : (
+                      <Sun className="w-4 h-4" />
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    System theme is active ({systemTheme === 'dark' ? 'Dark' : 'Light'})
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

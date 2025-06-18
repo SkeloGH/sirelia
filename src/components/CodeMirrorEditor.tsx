@@ -63,6 +63,13 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
             },
             '.cm-scroller': {
               fontFamily: 'monospace',
+              overflow: 'auto',
+            },
+            '.cm-content': {
+              padding: '8px 0',
+            },
+            '.cm-line': {
+              padding: '0 8px',
             },
           }),
         ],
@@ -92,7 +99,7 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
         }
       }
     };
-  }, []); // Remove dependencies to prevent re-initialization
+  }, [value, handleChange]);
 
   // Update editor content when value prop changes (but not during initialization)
   useEffect(() => {
@@ -160,9 +167,7 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
 
   const handleUndo = () => {
     if (editorViewRef.current) {
-      editorViewRef.current.dispatch({
-        effects: EditorView.undo.of(null)
-      });
+      undo(editorViewRef.current);
     }
   };
 
@@ -175,25 +180,25 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-2 bg-gray-50 border-b border-gray-200">
+      <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-1">
           <button
             onClick={formatCode}
-            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Format Code"
           >
             <Wand2 className="w-4 h-4" />
           </button>
           <button
             onClick={handleUndo}
-            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Undo"
           >
             <Undo className="w-4 h-4" />
           </button>
           <button
             onClick={handleRedo}
-            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Redo"
           >
             <Redo className="w-4 h-4" />
@@ -202,14 +207,14 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
         <div className="flex items-center space-x-1">
           <button
             onClick={copyCode}
-            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Copy Code"
           >
             <Copy className="w-4 h-4" />
           </button>
           <button
             onClick={clearCode}
-            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Clear Code"
           >
             <Trash2 className="w-4 h-4" />
@@ -218,7 +223,7 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
       </div>
       
       {/* Editor */}
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden">
         <div ref={editorRef} className="h-full w-full" />
       </div>
     </div>

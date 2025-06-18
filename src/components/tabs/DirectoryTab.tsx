@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Folder, File, ChevronRight, ChevronDown, FolderOpen, RefreshCw } from 'lucide-react';
 
 interface FileNode {
@@ -23,42 +23,14 @@ interface GitHubContentItem {
 }
 
 export default function DirectoryTab() {
+  const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
-  // Load repository configuration and fetch file structure
-  useEffect(() => {
-    loadRepositoryStructure();
-  }, []);
-
-  // Listen for storage changes to refresh when repository is connected
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'sirelia-repo-config') {
-        loadRepositoryStructure();
-      }
-    };
-
-    // Listen for changes from other tabs
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom events (for same-tab updates)
-    const handleCustomEvent = () => {
-      loadRepositoryStructure();
-    };
-    window.addEventListener('repositoryConnected', handleCustomEvent);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('repositoryConnected', handleCustomEvent);
-    };
-  }, []);
-
-  const loadRepositoryStructure = async () => {
+  const loadRepositoryStructure = useCallback(async () => {
     const savedRepoConfig = localStorage.getItem('sirelia-repo-config');
     
     if (!savedRepoConfig) {
@@ -113,7 +85,35 @@ export default function DirectoryTab() {
       setIsLoading(false);
       setHasAttemptedLoad(true);
     }
-  };
+  }, []);
+
+  // Load repository configuration and fetch file structure
+  useEffect(() => {
+    loadRepositoryStructure();
+  }, [loadRepositoryStructure]);
+
+  // Listen for storage changes to refresh when repository is connected
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'sirelia-repo-config') {
+        loadRepositoryStructure();
+      }
+    };
+
+    // Listen for changes from other tabs
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom events (for same-tab updates)
+    const handleCustomEvent = () => {
+      loadRepositoryStructure();
+    };
+    window.addEventListener('repositoryConnected', handleCustomEvent);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('repositoryConnected', handleCustomEvent);
+    };
+  }, [loadRepositoryStructure]);
 
   const buildFileTree = async (contents: GitHubContentItem[], owner: string, repo: string, token?: string): Promise<FileNode[]> => {
     const headers: HeadersInit = {

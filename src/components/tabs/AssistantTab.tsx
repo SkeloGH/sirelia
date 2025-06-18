@@ -164,46 +164,46 @@ This diagram shows the main component hierarchy of your Sirelia application. Wou
   const status = getStatusMessage();
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 h-full flex flex-col">
       {/* Status Indicator */}
-      <div className={`flex items-center space-x-2 p-2 rounded-md text-xs ${
+      <div className={`flex items-center space-x-2 p-2 rounded-md text-xs flex-shrink-0 ${
         status.type === 'error' 
-          ? 'bg-red-50 text-red-700 border border-red-200' 
+          ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800' 
           : status.type === 'warning'
-          ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-          : 'bg-green-50 text-green-700 border border-green-200'
+          ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800'
+          : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
       }`}>
         <status.icon className="w-3 h-3" />
         <span>{status.message}</span>
       </div>
 
       {/* Messages */}
-      <div className="space-y-2 max-h-48 overflow-y-auto">
+      <div className="space-y-2 overflow-y-auto scrollbar-hide flex-1 min-h-0">
         {messages.map((message, index) => (
           <div
             key={index}
             className={`p-2 rounded-lg text-sm ${
               message.role === 'user'
-                ? 'bg-blue-100 text-blue-900 ml-4'
-                : 'bg-gray-100 text-gray-900 mr-4'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 ml-4'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mr-4'
             }`}
           >
             {message.content}
           </div>
         ))}
         {isLoading && (
-          <div className="bg-gray-100 text-gray-900 p-2 rounded-lg text-sm mr-4">
+          <div className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-2 rounded-lg text-sm mr-4">
             Thinking...
           </div>
         )}
       </div>
 
       {/* Quick Actions */}
-      <div className="space-y-2">
+      <div className="space-y-2 flex-shrink-0">
         <button
           onClick={handleGenerateLoginFlow}
           disabled={!repoConfig?.isConnected}
-          className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded-md transition-colors"
+          className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 rounded-md transition-colors"
         >
           <Sparkles className="w-4 h-4" />
           <span>Generate Login Flow</span>
@@ -211,19 +211,19 @@ This diagram shows the main component hierarchy of your Sirelia application. Wou
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex space-x-2">
+      <form onSubmit={handleSubmit} className="flex space-x-2 flex-shrink-0">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask me to analyze your code..."
-          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
           disabled={isLoading || !aiConfig?.apiKey}
         />
         <button
           type="submit"
           disabled={!input.trim() || isLoading || !aiConfig?.apiKey}
-          className="px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded-md transition-colors"
+          className="px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 rounded-md transition-colors"
         >
           <Send className="w-4 h-4" />
         </button>
