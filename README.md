@@ -20,7 +20,7 @@ Sirelia is a Next.js application that generates and edits Mermaid diagrams with 
 - **Next.js 15**: App Router with TypeScript
 - **Tailwind CSS**: Utility-first styling
 - **CodeMirror 6**: Advanced code editor
-- **Mermaid**: Diagram rendering engine
+- **Mermaid v11**: Diagram rendering engine
 - **React Resizable Panels**: Flexible layout management
 - **GitHub API**: Repository structure and content access
 
