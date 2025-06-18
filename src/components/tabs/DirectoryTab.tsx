@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Folder, File, ChevronRight, ChevronDown, FolderOpen, RefreshCw } from 'lucide-react';
+import { RepositoryConfig } from '@/types/ai';
 
 interface FileNode {
   name: string;
@@ -31,52 +32,57 @@ export default function DirectoryTab() {
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   const loadRepositoryStructure = useCallback(async () => {
-    const savedRepoConfig = localStorage.getItem('sirelia-repo-config');
+    const savedReposConfig = localStorage.getItem('sirelia-repositories-state');
     
-    if (!savedRepoConfig) {
+    if (!savedReposConfig) {
       setHasAttemptedLoad(true);
       setFileTree([]);
       return;
     }
 
     try {
-      const config = JSON.parse(savedRepoConfig);
+      const reposConfig = JSON.parse(savedReposConfig);
       
-      if (config.isConnected && config.url) {
-        setIsLoading(true);
-        setError(null);
-        
-        // Extract owner and repo from GitHub URL
-        const urlParts = config.url.split('/');
-        const owner = urlParts[urlParts.length - 2];
-        const repo = urlParts[urlParts.length - 1];
-        
-        // Fetch repository structure using GitHub API
-        const headers: HeadersInit = {
-          'Accept': 'application/vnd.github.v3+json'
-        };
-        
-        // Add authorization if token is provided
-        if (config.token) {
-          headers['Authorization'] = `token ${config.token}`;
-        }
-        
-        const response = await fetch(
-          `https://api.github.com/repos/${owner}/${repo}/contents`,
-          { headers }
-        );
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch repository: ${response.statusText}`);
-        }
-        
-        const contents = await response.json() as GitHubContentItem[];
-        
-        const tree = await buildFileTree(contents, owner, repo, config.token);
-        setFileTree(tree);
-      } else {
+      // Find the active repository
+      const activeRepo = reposConfig.repositories?.find((repo: RepositoryConfig) => repo.isActive);
+      
+      if (!activeRepo || !activeRepo.isConnected) {
+        setHasAttemptedLoad(true);
         setFileTree([]);
+        return;
       }
+
+      setIsLoading(true);
+      setError(null);
+      
+      // Extract owner and repo from GitHub URL
+      const urlParts = activeRepo.url.split('/');
+      const owner = urlParts[urlParts.length - 2];
+      const repo = urlParts[urlParts.length - 1];
+      
+      // Fetch repository structure using GitHub API
+      const headers: HeadersInit = {
+        'Accept': 'application/vnd.github.v3+json'
+      };
+      
+      // Add authorization if token is provided
+      if (activeRepo.token) {
+        headers['Authorization'] = `token ${activeRepo.token}`;
+      }
+      
+      const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents`,
+        { headers }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch repository: ${response.statusText}`);
+      }
+      
+      const contents = await response.json() as GitHubContentItem[];
+      
+      const tree = await buildFileTree(contents, owner, repo, activeRepo.token);
+      setFileTree(tree);
     } catch (err) {
       console.error('DirectoryTab: Error loading repository structure:', err);
       setError(err instanceof Error ? err.message : 'Failed to load repository structure');
@@ -95,7 +101,7 @@ export default function DirectoryTab() {
   // Listen for storage changes to refresh when repository is connected
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'sirelia-repo-config') {
+      if (e.key === 'sirelia-repositories-state') {
         loadRepositoryStructure();
       }
     };
@@ -108,10 +114,14 @@ export default function DirectoryTab() {
       loadRepositoryStructure();
     };
     window.addEventListener('repositoryConnected', handleCustomEvent);
+    window.addEventListener('repositoryUpdated', handleCustomEvent);
+    window.addEventListener('activeRepositoryChanged', handleCustomEvent);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('repositoryConnected', handleCustomEvent);
+      window.removeEventListener('repositoryUpdated', handleCustomEvent);
+      window.removeEventListener('activeRepositoryChanged', handleCustomEvent);
     };
   }, [loadRepositoryStructure]);
 
