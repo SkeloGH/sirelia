@@ -1,5 +1,5 @@
 {
-  "name": "siren",
+  "name": "sirelia",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.54.0",
     "@codemirror/autocomplete": "^6.18.6",
     "@codemirror/commands": "^6.8.1",
     "@codemirror/lang-javascript": "^6.2.4",
@@ -21,6 +22,7 @@
     "lucide-react": "^0.516.0",
     "mermaid": "^11.6.0",
     "next": "15.3.3",
+    "openai-edge": "^1.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-resizable-panels": "^3.0.3"

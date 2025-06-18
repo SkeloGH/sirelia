@@ -1,4 +1,4 @@
-// Example configuration for Siren application
+// Example configuration for Sirelia application
 // Copy this file to config.ts and fill in your actual values
 
 export const config = {
@@ -24,7 +24,7 @@ export const config = {
 
   // Application Configuration
   app: {
-    name: process.env.NEXT_PUBLIC_APP_NAME || 'Siren',
+    name: process.env.NEXT_PUBLIC_APP_NAME || 'Sirelia',
     version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
   },
 };
