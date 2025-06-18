@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { Code, Eye } from 'lucide-react';
-import mermaid from 'mermaid';
 import CodeMirrorEditor from '@/components/CodeMirrorEditor';
+import MermaidRenderer from '@/components/MermaidRenderer';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 interface RightPanelProps {
@@ -13,78 +13,10 @@ interface RightPanelProps {
 
 export default function RightPanel({ mermaidCode, onCodeChange }: RightPanelProps) {
   const [showEditor, setShowEditor] = useState(false);
-  const [svgContent, setSvgContent] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [isRendering, setIsRendering] = useState(false);
-  const mermaidRef = useRef<HTMLDivElement>(null);
-  const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize Mermaid
-  useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: 'default',
-      securityLevel: 'loose',
-    });
-  }, []);
-
-  // Debounced render function
-  const debouncedRender = useCallback(() => {
-    if (renderTimeoutRef.current) {
-      clearTimeout(renderTimeoutRef.current);
-    }
-
-    renderTimeoutRef.current = setTimeout(async () => {
-      if (!mermaidRef.current || !mermaidCode.trim()) {
-        setIsRendering(false);
-        return;
-      }
-
-      try {
-        setIsRendering(true);
-        setError('');
-        
-        // Clear previous content
-        mermaidRef.current.innerHTML = '';
-        
-        const { svg } = await mermaid.render('mermaid-diagram', mermaidCode);
-        setSvgContent(svg);
-        
-        // Safely set innerHTML
-        if (mermaidRef.current) {
-          mermaidRef.current.innerHTML = svg;
-        }
-      } catch (err) {
-        console.error('Mermaid rendering error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to render diagram');
-        if (mermaidRef.current) {
-          mermaidRef.current.innerHTML = '';
-        }
-      } finally {
-        setIsRendering(false);
-      }
-    }, 300); // 300ms debounce
-  }, [mermaidCode]);
-
-  // Render Mermaid diagram with debouncing
-  useEffect(() => {
-    debouncedRender();
-
-    return () => {
-      if (renderTimeoutRef.current) {
-        clearTimeout(renderTimeoutRef.current);
-      }
-    };
-  }, [debouncedRender]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (renderTimeoutRef.current) {
-        clearTimeout(renderTimeoutRef.current);
-      }
-    };
-  }, []);
+  const handleToggleEditor = () => {
+    setShowEditor(!showEditor);
+  };
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -93,7 +25,7 @@ export default function RightPanel({ mermaidCode, onCodeChange }: RightPanelProp
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Mermaid Diagram</h2>
           <button
-            onClick={() => setShowEditor(!showEditor)}
+            onClick={handleToggleEditor}
             className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
           >
             {showEditor ? (
@@ -124,50 +56,23 @@ export default function RightPanel({ mermaidCode, onCodeChange }: RightPanelProp
             </ErrorBoundary>
           </div>
         ) : (
-          <div className="h-full p-4 overflow-auto">
-            {error ? (
+          <div className="h-full">
+            {!mermaidCode.trim() ? (
               <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-red-500 text-lg font-medium mb-2">
-                    Rendering Error
+                <div className="text-gray-400 text-center">
+                  <div className="text-lg font-medium mb-2">
+                    No diagram to display
                   </div>
-                  <div className="text-gray-600 text-sm max-w-md">
-                    {error}
-                  </div>
-                  <div className="mt-4 text-xs text-gray-500">
-                    Check your Mermaid syntax and try again
-                  </div>
-                </div>
-              </div>
-            ) : isRendering ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-gray-500 text-lg font-medium mb-2">
-                    Rendering Diagram...
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Please wait
+                  <div className="text-sm">
+                    Generate a diagram using the assistant or edit the code
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center">
-                {!svgContent ? (
-                  <div className="text-gray-400 text-center">
-                    <div className="text-lg font-medium mb-2">
-                      No diagram to display
-                    </div>
-                    <div className="text-sm">
-                      Generate a diagram using the assistant or edit the code
-                    </div>
-                  </div>
-                ) : (
-                  <div 
-                    ref={mermaidRef}
-                    className="w-full h-full flex items-center justify-center"
-                  />
-                )}
-              </div>
+              <MermaidRenderer 
+                code={mermaidCode} 
+                className="h-full"
+              />
             )}
           </div>
         )}

@@ -21,7 +21,7 @@ interface LeftPanelProps {
 type TabType = 'assistant' | 'directory' | 'repositories' | 'configuration';
 
 export default function LeftPanel({ onGenerateDiagram }: LeftPanelProps) {
-  const [collapsedTabs, setCollapsedTabs] = useState<Set<TabType>>(new Set());
+  const [collapsedTabs, setCollapsedTabs] = useState<Set<TabType>>(new Set(['directory', 'repositories', 'configuration']));
 
   const toggleTab = (tab: TabType) => {
     const newCollapsed = new Set(collapsedTabs);
@@ -43,7 +43,7 @@ export default function LeftPanel({ onGenerateDiagram }: LeftPanelProps) {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-lg">S</span>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Siren</h1>
+          <h1 className="text-xl font-bold text-gray-900">Sirelia</h1>
         </div>
       </div>
 

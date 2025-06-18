@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Siren - AI-Powered Code Visualization",
+  title: "Sirelia - AI-Powered Mermaid Code Visualization",
   description: "Generate and edit Mermaid diagrams with AI assistance and repository context",
 };
 

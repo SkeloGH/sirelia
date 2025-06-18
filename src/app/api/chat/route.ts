@@ -22,7 +22,7 @@ graph TD
     G --> L[Repository List]
 \`\`\`
 
-This diagram shows the main component hierarchy of your Siren application. Would you like me to generate a more detailed diagram focusing on a specific aspect of your codebase?`;
+This diagram shows the main component hierarchy of your Sirelia application. Would you like me to generate a more detailed diagram focusing on a specific aspect of your codebase?`;
 
   return new Response(response, {
     headers: {

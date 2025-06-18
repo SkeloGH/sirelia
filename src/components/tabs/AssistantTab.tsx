@@ -32,24 +32,47 @@ export default function AssistantTab({ onGenerateDiagram }: AssistantTabProps) {
 
   // Load configuration from localStorage
   useEffect(() => {
-    const savedAIConfig = localStorage.getItem('siren-ai-config');
-    const savedRepoConfig = localStorage.getItem('siren-repo-config');
-    
-    if (savedAIConfig) {
-      try {
-        setAIConfig(JSON.parse(savedAIConfig));
-      } catch (error) {
-        console.error('Error loading AI config:', error);
+    const loadConfiguration = () => {
+      const savedAIConfig = localStorage.getItem('sirelia-ai-config');
+      const savedRepoConfig = localStorage.getItem('sirelia-repo-config');
+      
+      if (savedAIConfig) {
+        try {
+          const parsed = JSON.parse(savedAIConfig);
+          setAIConfig(parsed);
+        } catch (error) {
+          console.error('Error loading AI config:', error);
+        }
       }
-    }
-    
-    if (savedRepoConfig) {
-      try {
-        setRepoConfig(JSON.parse(savedRepoConfig));
-      } catch (error) {
-        console.error('Error loading repo config:', error);
+      
+      if (savedRepoConfig) {
+        try {
+          const parsed = JSON.parse(savedRepoConfig);
+          setRepoConfig(parsed);
+        } catch (error) {
+          console.error('Error loading repo config:', error);
+        }
       }
-    }
+    };
+
+    loadConfiguration();
+
+    // Listen for configuration updates
+    const handleAIConfigUpdate = () => {
+      loadConfiguration();
+    };
+
+    const handleRepoConfigUpdate = () => {
+      loadConfiguration();
+    };
+
+    window.addEventListener('aiConfigUpdated', handleAIConfigUpdate);
+    window.addEventListener('repositoryConnected', handleRepoConfigUpdate);
+
+    return () => {
+      window.removeEventListener('aiConfigUpdated', handleAIConfigUpdate);
+      window.removeEventListener('repositoryConnected', handleRepoConfigUpdate);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,7 +114,7 @@ graph TD
     G --> L[Repository List]
 \`\`\`
 
-This diagram shows the main component hierarchy of your Siren application. Would you like me to generate a more detailed diagram focusing on a specific aspect of your codebase?`;
+This diagram shows the main component hierarchy of your Sirelia application. Would you like me to generate a more detailed diagram focusing on a specific aspect of your codebase?`;
       
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
       setIsLoading(false);
@@ -121,6 +144,7 @@ This diagram shows the main component hierarchy of your Siren application. Would
     I --> J[User can access protected routes]`;
     
     onGenerateDiagram(loginFlowCode);
+    
     setMessages(prev => [...prev, { 
       role: 'assistant', 
       content: 'I\'ve generated a login flow diagram for you! Check the right panel to see it rendered.' 
