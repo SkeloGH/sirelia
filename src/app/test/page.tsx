@@ -1,10 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { MCPConfig } from '../../types/ai';
 
 export default function TestPage() {
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mcpConfig, setMcpConfig] = useState<MCPConfig | null>(null);
+
+  // Load MCP config from localStorage
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('sirelia-mcp-config');
+    if (savedConfig) {
+      try {
+        setMcpConfig(JSON.parse(savedConfig));
+      } catch (error) {
+        console.error('Failed to parse MCP config:', error);
+      }
+    }
+  }, []);
 
   const testAPI = async () => {
     setLoading(true);
@@ -39,22 +53,79 @@ export default function TestPage() {
     }
   };
 
+  const updateMcpConfig = () => {
+    const testConfig: MCPConfig = {
+      serverUrl: 'https://test-mcp-server.com',
+      token: 'test-token-' + Date.now(),
+      name: 'test-client',
+      isEnabled: false
+    };
+    localStorage.setItem('sirelia-mcp-config', JSON.stringify(testConfig));
+    setMcpConfig(testConfig);
+  };
+
+  const clearMcpConfig = () => {
+    localStorage.removeItem('sirelia-mcp-config');
+    setMcpConfig(null);
+  };
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">AI API Test</h1>
-      <button
-        onClick={testAPI}
-        disabled={loading}
-        className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
-      >
-        {loading ? 'Testing...' : 'Test API'}
-      </button>
-      {response && (
-        <div className="mt-4 p-4 bg-gray-100 rounded">
-          <h2 className="font-bold mb-2">Response:</h2>
-          <pre className="whitespace-pre-wrap">{response}</pre>
+    <div className="p-8 space-y-8">
+      <h1 className="text-2xl font-bold mb-4">Test Page</h1>
+      
+      {/* MCP Configuration Test */}
+      <div className="border border-gray-300 rounded-lg p-4">
+        <h2 className="text-xl font-semibold mb-4">MCP Configuration Persistence Test</h2>
+        
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-medium mb-2">Current MCP Config:</h3>
+            <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto">
+              {mcpConfig ? JSON.stringify(mcpConfig, null, 2) : 'No configuration found'}
+            </pre>
+          </div>
+          
+          <div className="flex space-x-4">
+            <button
+              onClick={updateMcpConfig}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Update Test Config
+            </button>
+            <button
+              onClick={clearMcpConfig}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Clear Config
+            </button>
+          </div>
+          
+          <div className="text-sm text-gray-600">
+            <p>• Click &quot;Update Test Config&quot; to save a test configuration to localStorage</p>
+            <p>• Click &quot;Clear Config&quot; to remove the configuration from localStorage</p>
+            <p>• The configuration should persist when you navigate away and come back</p>
+            <p>• Check the Configuration tab to see if the values are loaded correctly</p>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* AI API Test */}
+      <div className="border border-gray-300 rounded-lg p-4">
+        <h2 className="text-xl font-semibold mb-4">AI API Test</h2>
+        <button
+          onClick={testAPI}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
+        >
+          {loading ? 'Testing...' : 'Test API'}
+        </button>
+        {response && (
+          <div className="mt-4 p-4 bg-gray-100 rounded">
+            <h3 className="font-bold mb-2">Response:</h3>
+            <pre className="whitespace-pre-wrap text-sm">{response}</pre>
+          </div>
+        )}
+      </div>
     </div>
   );
 } 

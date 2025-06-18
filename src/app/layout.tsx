@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import ToastContainer from "../components/Toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +21,7 @@ export default function RootLayout({
         <div className="h-screen w-screen overflow-hidden">
           {children}
         </div>
+        <ToastContainer />
       </body>
     </html>
   );
