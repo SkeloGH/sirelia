@@ -8,7 +8,9 @@ import {
   RotateCcw, 
   FileText,
   Image,
-  GitBranch
+  GitBranch,
+  Move,
+  MousePointer
 } from 'lucide-react';
 
 interface MermaidRendererProps {
@@ -18,12 +20,17 @@ interface MermaidRendererProps {
 
 export default function MermaidRenderer({ code, className = '' }: MermaidRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isRendering, setIsRendering] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [scale, setScale] = useState(1);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [navigationMode, setNavigationMode] = useState<'drag' | 'select'>('drag');
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [svgTransform, setSvgTransform] = useState({ x: 0, y: 0 });
   const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter out comments and clean up code
@@ -211,8 +218,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
         }
         
         setSvgContent(svg);
-        setScale(1); // Reset zoom when new diagram is rendered
-        setSelectedNode(null); // Reset selection
+        // Reset view is now handled by dedicated useEffect
       } catch (err) {
         console.error('MermaidRenderer: Rendering error:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to render diagram';
@@ -246,39 +252,49 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
   useEffect(() => {
     if (!svgContent || !containerRef.current) return;
 
-    const svgElement = containerRef.current.querySelector('svg');
+    const svgElement = containerRef.current.querySelector('svg') as SVGSVGElement;
     if (!svgElement) return;
 
-    // Add zoom transform
-    svgElement.style.transform = `scale(${scale})`;
-    svgElement.style.transformOrigin = 'center center';
-    svgElement.style.transition = 'transform 0.2s ease-in-out';
+    // Set cursor and pointer events on the wrapper
+    if (wrapperRef.current) {
+      wrapperRef.current.style.cursor = navigationMode === 'drag' ? (isDragging ? 'grabbing' : 'grab') : 'default';
+      wrapperRef.current.style.transition = isDragging ? 'none' : 'transform 0.1s ease-out';
+    }
 
-    // Add click handlers for nodes
+    // Add click handlers for nodes (only in select mode)
     const nodes = svgElement.querySelectorAll('.node, .label, text');
     nodes.forEach((node) => {
-      node.addEventListener('click', (e) => {
+      const handleNodeClick = (e: Event) => {
+        if (navigationMode !== 'select') return;
         e.stopPropagation();
-        const nodeId = node.getAttribute('id') || node.textContent || 'unknown';
+        const nodeId = (node as Element).getAttribute('id') || (node as Element).textContent || 'unknown';
         setSelectedNode(selectedNode === nodeId ? null : nodeId);
-      });
+      };
+      
+      node.removeEventListener('click', handleNodeClick);
+      node.addEventListener('click', handleNodeClick);
     });
 
-    // Add click handler to reset selection
-    svgElement.addEventListener('click', (e) => {
+    // Add click handler to reset selection (only in select mode)
+    const handleSvgClick = (e: Event) => {
+      if (navigationMode !== 'select') return;
       if (e.target === svgElement) {
         setSelectedNode(null);
       }
-    });
+    };
+    
+    svgElement.removeEventListener('click', handleSvgClick);
+    svgElement.addEventListener('click', handleSvgClick);
 
     return () => {
       // Cleanup event listeners
       nodes.forEach((node) => {
-        node.removeEventListener('click', () => {});
+        const handleNodeClick = () => {};
+        node.removeEventListener('click', handleNodeClick);
       });
-      svgElement.removeEventListener('click', () => {});
+      svgElement.removeEventListener('click', handleSvgClick);
     };
-  }, [svgContent, scale, selectedNode]);
+  }, [svgContent, navigationMode, selectedNode, isDragging]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -291,9 +307,68 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
     };
   }, []);
 
-  const zoomIn = () => setScale(prev => Math.min(prev * 1.2, 3));
-  const zoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.3));
-  const resetZoom = () => setScale(1);
+  const zoomIn = () => {
+    const newScale = Math.min(scale * 1.2, 3);
+    setScale(newScale);
+  };
+  
+  const zoomOut = () => {
+    const newScale = Math.max(scale / 1.2, 0.3);
+    setScale(newScale);
+  };
+
+  // Navigation functions
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (navigationMode !== 'drag') return;
+    
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - svgTransform.x, y: e.clientY - svgTransform.y });
+  }, [navigationMode, svgTransform]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || navigationMode !== 'drag') return;
+    
+    e.preventDefault();
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    setSvgTransform({ x: newX, y: newY });
+  }, [isDragging, navigationMode, dragStart]);
+
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    if (navigationMode !== 'drag') return;
+    e.preventDefault();
+    setIsDragging(false);
+  }, [navigationMode]);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.max(0.3, Math.min(3, scale * delta));
+    setScale(newScale);
+  }, [scale]);
+
+  const resetView = useCallback(() => {
+    setScale(1);
+    setSvgTransform({ x: 0, y: 0 });
+    setSelectedNode(null);
+    setNavigationMode('drag');
+  }, []);
+
+  const toggleNavigationMode = useCallback(() => {
+    setNavigationMode(prev => prev === 'drag' ? 'select' : 'drag');
+    setIsDragging(false);
+  }, []);
+
+  // Reset view when new diagram is rendered
+  useEffect(() => {
+    if (svgContent) {
+      setScale(1);
+      setSvgTransform({ x: 0, y: 0 });
+      setSelectedNode(null);
+      setNavigationMode('drag');
+    }
+  }, [svgContent]);
 
   const exportAsMmd = () => {
     const blob = new Blob([code], { type: 'text/plain' });
@@ -395,7 +470,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
     return (
       <div className={`flex flex-col h-full ${className}`}>
         {/* Toolbar - disabled when there's an error */}
-        <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 opacity-50">
+        <div className="flex-shrink-0 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 opacity-50">
           <div className="flex items-center space-x-1">
             <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom In">
               <ZoomIn className="w-4 h-4" />
@@ -403,10 +478,16 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
             <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom Out">
               <ZoomOut className="w-4 h-4" />
             </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Reset Zoom">
+            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Reset View">
               <RotateCcw className="w-4 h-4" />
             </button>
             <span className="text-xs text-gray-400 ml-2">100%</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Navigation Mode">
+              <Move className="w-4 h-4" />
+            </button>
+            <span className="text-xs text-gray-400 mx-2">Drag</span>
           </div>
           <div className="flex items-center space-x-1">
             <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .mmd">
@@ -437,7 +518,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
     return (
       <div className={`flex flex-col h-full ${className}`}>
         {/* Toolbar - disabled when rendering */}
-        <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 opacity-50">
+        <div className="flex-shrink-0 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 opacity-50">
           <div className="flex items-center space-x-1">
             <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom In">
               <ZoomIn className="w-4 h-4" />
@@ -445,10 +526,16 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
             <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom Out">
               <ZoomOut className="w-4 h-4" />
             </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Reset Zoom">
+            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Reset View">
               <RotateCcw className="w-4 h-4" />
             </button>
             <span className="text-xs text-gray-400 ml-2">100%</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Navigation Mode">
+              <Move className="w-4 h-4" />
+            </button>
+            <span className="text-xs text-gray-400 mx-2">Drag</span>
           </div>
           <div className="flex items-center space-x-1">
             <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .mmd">
@@ -476,7 +563,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
     return (
       <div className={`flex flex-col h-full ${className}`}>
         {/* Toolbar - disabled when no content */}
-        <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 opacity-50">
+        <div className="flex-shrink-0 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 opacity-50">
           <div className="flex items-center space-x-1">
             <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom In">
               <ZoomIn className="w-4 h-4" />
@@ -484,10 +571,16 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
             <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom Out">
               <ZoomOut className="w-4 h-4" />
             </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Reset Zoom">
+            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Reset View">
               <RotateCcw className="w-4 h-4" />
             </button>
             <span className="text-xs text-gray-400 ml-2">100%</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Navigation Mode">
+              <Move className="w-4 h-4" />
+            </button>
+            <span className="text-xs text-gray-400 mx-2">Drag</span>
           </div>
           <div className="flex items-center space-x-1">
             <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .mmd">
@@ -514,7 +607,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex-shrink-0 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-1">
           <button
             onClick={zoomIn}
@@ -531,9 +624,9 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
             <ZoomOut className="w-4 h-4" />
           </button>
           <button
-            onClick={resetZoom}
+            onClick={resetView}
             className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="Reset Zoom"
+            title="Reset View"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
@@ -541,6 +634,28 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
             {Math.round(scale * 100)}%
           </span>
         </div>
+        
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={toggleNavigationMode}
+            className={`p-1.5 rounded transition-colors ${
+              navigationMode === 'drag'
+                ? 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+            title={navigationMode === 'drag' ? 'Drag Mode (Active)' : 'Select Mode (Active)'}
+          >
+            {navigationMode === 'drag' ? (
+              <Move className="w-4 h-4" />
+            ) : (
+              <MousePointer className="w-4 h-4" />
+            )}
+          </button>
+          <span className="text-xs text-gray-500 dark:text-gray-400 mx-2">
+            {navigationMode === 'drag' ? 'Drag' : 'Select'}
+          </span>
+        </div>
+        
         <div className="flex items-center space-x-1">
           <button
             onClick={exportAsMmd}
@@ -567,16 +682,33 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
       </div>
       
       {/* Diagram Container */}
-      <div className="flex-1 overflow-auto relative">
+      <div 
+        className="flex-1 relative overflow-hidden"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
+        style={{ 
+          cursor: navigationMode === 'drag' ? (isDragging ? 'grabbing' : 'grab') : 'default'
+        }}
+      >
         <div 
-          ref={containerRef}
-          className="w-full h-full flex items-center justify-center p-4"
-          dangerouslySetInnerHTML={{ __html: svgContent }}
+          ref={wrapperRef}
+          className="absolute inset-0 flex items-center justify-center"
           style={{
+            transform: `translate(${svgTransform.x}px, ${svgTransform.y}px) scale(${scale})`,
+            transformOrigin: '50% 50%',
+            transition: isDragging ? 'none' : 'transform 0.1s ease-out',
             filter: selectedNode ? 'brightness(0.7)' : 'none',
-            transition: 'filter 0.2s ease-in-out'
           }}
-        />
+        >
+          <div 
+            ref={containerRef}
+            className="w-full h-full flex items-center justify-center"
+            dangerouslySetInnerHTML={{ __html: svgContent }}
+          />
+        </div>
       </div>
     </div>
   );
