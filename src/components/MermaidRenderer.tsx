@@ -41,17 +41,45 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
     const filteredCode = filterCode(code);
     if (!filteredCode.trim()) return false;
     
-    // Check for common Mermaid diagram types (v11 supports more types)
+    // Check for common Mermaid diagram types (v11 supports many more types)
     const diagramTypes = [
       'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 
-      'stateDiagram', 'entityRelationshipDiagram', 'userJourney',
-      'gantt', 'pie', 'quadrantChart', 'requirement', 'gitgraph',
-      'mindmap', 'timeline', 'zenuml', 'sankey', 'c4', 'journey'
+      'stateDiagram', 'stateDiagram-v2', 'entityRelationshipDiagram', 'erDiagram',
+      'userJourney', 'journey', 'gantt', 'pie', 'quadrantChart', 
+      'requirement', 'gitgraph', 'mindmap', 'timeline', 'zenuml', 
+      'sankey', 'c4', 'c4context', 'xychart-beta', 'block-beta', 
+      'packet-beta', 'kanban', 'architecture-beta'
     ];
     
-    return diagramTypes.some(type => 
-      filteredCode.toLowerCase().includes(type.toLowerCase())
+    // Check if the code starts with any of the supported diagram types
+    const hasValidType = diagramTypes.some(type => 
+      filteredCode.toLowerCase().startsWith(type.toLowerCase())
     );
+
+    // If we don't find a known type, let Mermaid handle the validation
+    // This allows for new diagram types and experimental features
+    if (!hasValidType) {
+      // Check if it looks like a Mermaid diagram (has some basic structure)
+      const lines = filteredCode.split('\n');
+      const firstLine = lines[0].trim().toLowerCase();
+      
+      // Allow if it starts with a word that could be a diagram type
+      // or if it has typical Mermaid syntax patterns
+      const looksLikeMermaid = 
+        firstLine.length > 0 && 
+        !firstLine.startsWith('//') && 
+        !firstLine.startsWith('#') &&
+        (firstLine.includes('-->') || 
+         firstLine.includes('---') || 
+         firstLine.includes('[') ||
+         firstLine.includes('{') ||
+         firstLine.includes('(') ||
+         /^[a-zA-Z]/.test(firstLine));
+      
+      return looksLikeMermaid;
+    }
+    
+    return true;
   }, []);
 
   // Clean up any stray Mermaid nodes that might have been appended outside the body
@@ -163,6 +191,16 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
           diagramMarginY: 10,
         },
         gantt: {
+          useMaxWidth: true,
+        },
+        // Ensure all diagram types are available
+        er: {
+          useMaxWidth: true,
+        },
+        journey: {
+          useMaxWidth: true,
+        },
+        c4: {
           useMaxWidth: true,
         },
       });
