@@ -10,7 +10,7 @@
     "bin/",
     "lib/",
     "templates/",
-    "dist/"
+    "out/"
   ],
   "scripts": {
     "dev": "next dev --turbopack",

@@ -178,8 +178,8 @@ export default function Home() {
               How to Use
             </h3>
             <ol className="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-200">
-              <li>Make sure the WebSocket server is running on port 3001</li>
-              <li>Send a POST request to <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">/api/mermaid-bridge</code></li>
+              <li>Make sure the bridge server is running on port 3001</li>
+              <li>Send a POST request to <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">http://localhost:3001/mermaid</code></li>
               <li>Include Mermaid code in the request body: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{`{code: 'graph TD\\nA-->B'}`}</code></li>
               <li>Your diagram will appear here automatically</li>
               <li>Use the &quot;Edit Code&quot; button to modify the diagram in real-time</li>
