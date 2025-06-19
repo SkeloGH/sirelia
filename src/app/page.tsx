@@ -1,216 +1,193 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { Panel, PanelGroup, ImperativePanelGroupHandle } from 'react-resizable-panels';
-import LeftPanel from '@/components/LeftPanel';
-import RightPanel from '@/components/RightPanel';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { MCPConfig } from '@/types/ai';
-import { showToast } from '@/components/Toast';
+import { useEffect, useState, useCallback } from 'react';
+import { Code, Eye } from 'lucide-react';
+import CodeMirrorEditor from '../components/CodeMirrorEditor';
+import MermaidRenderer from '../components/MermaidRenderer';
+import ErrorBoundary from '../components/ErrorBoundary';
+import ThemeSwitch from '../components/ThemeSwitch';
+import { MermaidBridgeClient } from '../services/mcp/mermaid-bridge-client';
 
 export default function Home() {
-  const [mermaidCode, setMermaidCode] = useState('');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const panelGroupRef = useRef<ImperativePanelGroupHandle>(null);
+  const [mermaidCode, setMermaidCode] = useState<string>('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
+  const [validationError, setValidationError] = useState<string>('');
 
-  const handleCodeChange = useCallback((code: string) => {
-    setMermaidCode(code);
+  useEffect(() => {
+    // Create and connect to MCP bridge
+    const client = new MermaidBridgeClient(
+      (code) => {
+        console.log('Received Mermaid code:', code.substring(0, 50) + '...');
+        setMermaidCode(code);
+        setValidationError(''); // Clear any previous validation errors
+      },
+      (connected) => {
+        setIsConnected(connected);
+      }
+    );
+    
+    client.connect();
+
+    return () => {
+      client.disconnect();
+    };
   }, []);
 
-  const handleGenerateDiagram = useCallback((code: string) => {
-    setMermaidCode(code);
+  // Validate Mermaid syntax before switching to visualizer
+  const validateMermaidCode = useCallback((code: string): boolean => {
+    if (!code.trim()) return true; // Empty code is valid
+    
+    // Filter out comments and empty lines
+    const filteredCode = code
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => {
+        if (!line) return false;
+        if (line.startsWith('//')) return false;
+        if (line.startsWith('#')) return false;
+        if (line.startsWith('/*') && line.endsWith('*/')) return false;
+        if (line.startsWith('%%') && line.endsWith('%%')) return true;
+        return true;
+      })
+      .join('\n');
+
+    if (!filteredCode.trim()) {
+      setValidationError('No valid Mermaid diagram detected. Please ensure your code starts with a diagram type (e.g., graph, flowchart, sequenceDiagram).');
+      return false;
+    }
+
+    // Check for common Mermaid diagram types
+    const diagramTypes = [
+      'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 
+      'stateDiagram', 'entityRelationshipDiagram', 'userJourney',
+      'gantt', 'pie', 'quadrantChart', 'requirement', 'gitgraph',
+      'mindmap', 'timeline', 'zenuml', 'sankey'
+    ];
+    
+    const hasValidType = diagramTypes.some(type => 
+      filteredCode.toLowerCase().includes(type.toLowerCase())
+    );
+
+    if (!hasValidType) {
+      setValidationError('No valid Mermaid diagram detected. Please ensure your code starts with a diagram type (e.g., graph, flowchart, sequenceDiagram).');
+      return false;
+    }
+
+    setValidationError('');
+    return true;
   }, []);
 
-  // Handle panel resize with auto-collapse logic
-  const handlePanelResize = useCallback((sizes: number[]) => {
-    // Only handle resize when sidebar is visible
-    if (!isSidebarCollapsed && sizes.length > 1) {
-      const leftPanelSize = sizes[0];
-      const minSize = 20; // Minimum size when expanded
-      const collapseThreshold = minSize * 0.8; // 20% below minimum (16%)
-      
-      if (leftPanelSize < collapseThreshold) {
-        // Collapse the sidebar
-        setIsSidebarCollapsed(true);
+  const handleToggleEditor = () => {
+    if (showEditor) {
+      // Switching from editor to visualizer - validate first
+      if (!validateMermaidCode(mermaidCode)) {
+        return; // Don't switch if validation fails
       }
     }
-  }, [isSidebarCollapsed]);
+    setShowEditor(!showEditor);
+  };
 
-  // Toggle sidebar manually
-  const toggleSidebar = useCallback(() => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  }, [isSidebarCollapsed]);
-
-  // Keyboard shortcut to toggle sidebar (Ctrl+B)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        toggleSidebar();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleSidebar]);
-
-  // Auto-connect to MCP on app load
-  useEffect(() => {
-    const autoConnectMCP = async () => {
-      const savedMCPConfig = localStorage.getItem('sirelia-mcp-config');
-      if (savedMCPConfig) {
-        try {
-          const mcpConfig: MCPConfig = JSON.parse(savedMCPConfig);
-          
-          // Only auto-connect if we have a valid MCP config that was previously enabled
-          if (mcpConfig.serverUrl && mcpConfig.isEnabled && !mcpConfig.isConnected) {
-            console.log('Auto-connecting to MCP server on app load...');
-            
-            try {
-              const response = await fetch('/api/mcp', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  action: 'connect',
-                  config: mcpConfig,
-                }),
-              });
-
-              if (response.ok) {
-                const result = await response.json();
-                
-                if (result.success) {
-                  // Update the localStorage to reflect the connection
-                  const updatedConfig = { ...mcpConfig, isConnected: true };
-                  localStorage.setItem('sirelia-mcp-config', JSON.stringify(updatedConfig));
-                  
-                  showToast({
-                    type: 'success',
-                    title: 'MCP Auto-Connected',
-                    message: 'Successfully reconnected to MCP server'
-                  });
-                  
-                  console.log('MCP auto-connection successful on app load');
-                } else {
-                  console.warn('MCP auto-connection failed on app load:', result.error);
-                }
-              } else {
-                console.warn('MCP auto-connection failed on app load:', response.status);
-              }
-            } catch (error) {
-              console.warn('MCP auto-connection error on app load:', error);
-            }
-          }
-        } catch (error) {
-          console.error('Failed to parse MCP config on app load:', error);
-        }
-      }
-    };
-
-    // Run auto-connection after a short delay to ensure the app is fully loaded
-    const timer = setTimeout(autoConnectMCP, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Listen for theme changes and force re-render
-  useEffect(() => {
-    const handleThemeChange = () => {
-      // Force re-render for theme changes
-    };
-
-    window.addEventListener('themeChanged', handleThemeChange);
-    
-    return () => {
-      window.removeEventListener('themeChanged', handleThemeChange);
-    };
-  }, []);
+  const handleCodeChange = (newCode: string) => {
+    setMermaidCode(newCode);
+    setValidationError(''); // Clear validation errors when user edits
+  };
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-      <ErrorBoundary>
-        <PanelGroup 
-          direction="horizontal" 
-          className="w-full h-full" 
-          ref={panelGroupRef}
-          onLayout={handlePanelResize}
-        >
-          <Panel 
-            defaultSize={2} 
-            minSize={2} 
-            maxSize={isSidebarCollapsed ? 4 : 50}
-            collapsible={false}
-          >
-            <div className="h-full relative flex flex-col">
-              {isSidebarCollapsed ? (
-                <div 
-                  className="flex items-center justify-center h-full w-full cursor-col-resize bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    setIsSidebarCollapsed(false);
-                    setTimeout(() => {
-                      panelGroupRef.current?.setLayout([25, 75]);
-                    }, 0);
-                  }}
-                  title="Drag or click to expand sidebar"
-                >
-                  <span className="rotate-180 text-gray-500">❯</span>
-                </div>
-              ) : (
-                <>
-                  <div 
-                    className="absolute right-0 top-0 w-2 h-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-col-resize z-10 flex items-center justify-center"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      let isDragging = false;
-                      const startX = e.clientX;
-                      const startLayout = panelGroupRef.current?.getLayout() || [25, 75];
-                      
-                      const handleMouseMove = (moveEvent: MouseEvent) => {
-                        if (Math.abs(moveEvent.clientX - startX) > 5) {
-                          isDragging = true;
-                        }
-                        
-                        if (isDragging) {
-                          const deltaX = moveEvent.clientX - startX;
-                          const containerWidth = window.innerWidth;
-                          const deltaPercent = (deltaX / containerWidth) * 100;
-                          const newLeftSize = Math.max(25, Math.min(50, startLayout[0] + deltaPercent));
-                          const newRightSize = 100 - newLeftSize;
-                          panelGroupRef.current?.setLayout([newLeftSize, newRightSize]);
-                        }
-                      };
-                      
-                      const handleMouseUp = () => {
-                        if (!isDragging) {
-                          // Click without drag - collapse
-                          setIsSidebarCollapsed(true);
-                        }
-                        document.removeEventListener('mousemove', handleMouseMove);
-                        document.removeEventListener('mouseup', handleMouseUp);
-                      };
-                      
-                      document.addEventListener('mousemove', handleMouseMove);
-                      document.addEventListener('mouseup', handleMouseUp);
-                    }}
-                    title="Click to collapse, drag to resize"
-                  >
-                    <span className="text-gray-500">❮</span>
+    <div className="min-h-screen min-w-screen bg-gray-50 dark:bg-gray-900">
+      <div>
+        {/* Main Content - Full Height */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden" style={{ height: 'calc(100vh)' }}>
+          {/* Toolbar */}
+          <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Sirelia - Mermaid Bridge
+                  <span className={`inline-block ml-1 w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Real-time Mermaid diagram rendering from Cursor IDE with code editing</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                {validationError && !showEditor && (
+                  <div className="text-red-500 dark:text-red-400 text-sm">
+                    {validationError}
                   </div>
-                  <LeftPanel onGenerateDiagram={handleGenerateDiagram} />
-                </>
-              )}
+                )}
+                <button
+                  onClick={handleToggleEditor}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                >
+                  {showEditor ? (
+                    <>
+                      <Eye className="w-4 h-4" />
+                      <span>View Diagram</span>
+                    </>
+                  ) : (
+                    <>
+                      <Code className="w-4 h-4" />
+                      <span>Edit Code</span>
+                    </>
+                  )}
+                </button>
+                <ThemeSwitch />
+              </div>
             </div>
-          </Panel>
-          
-          {/* No resize handle needed, handled by the sidebar itself */}
-          
-          <Panel defaultSize={isSidebarCollapsed ? 98 : 70} minSize={30}>
-            <RightPanel mermaidCode={mermaidCode} onCodeChange={handleCodeChange} />
-          </Panel>
-        </PanelGroup>
-      </ErrorBoundary>
+          </div>
+
+          {/* Content - Full Remaining Height */}
+          <div className="h-full overflow-hidden">
+            {showEditor ? (
+              <div className="h-full overflow-hidden">
+                <ErrorBoundary>
+                  <CodeMirrorEditor
+                    key="mermaid-editor"
+                    value={mermaidCode}
+                    onChange={handleCodeChange}
+                  />
+                </ErrorBoundary>
+              </div>
+            ) : (
+              <div className="h-full overflow-hidden">
+                {!mermaidCode.trim() ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-gray-400 dark:text-gray-500 text-center">
+                      <div className="text-lg font-medium mb-2">
+                        No diagram to display
+                      </div>
+                      <div className="text-sm">
+                        Generate a diagram using the assistant or edit the code
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <MermaidRenderer 
+                    code={mermaidCode} 
+                    className="h-full"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Instructions - Only show when no diagram */}
+        {!mermaidCode.trim() && (
+          <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">
+              How to Use
+            </h3>
+            <ol className="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-200">
+              <li>Make sure the bridge server is running on port 3001</li>
+              <li>Send a POST request to <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">http://localhost:3001/mermaid</code></li>
+              <li>Include Mermaid code in the request body: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{`{code: 'graph TD\\nA-->B'}`}</code></li>
+              <li>Your diagram will appear here automatically</li>
+              <li>Use the &quot;Edit Code&quot; button to modify the diagram in real-time</li>
+              <li>Use the toolbar controls to zoom, pan, and export your diagram</li>
+            </ol>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

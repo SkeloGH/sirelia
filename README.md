@@ -1,152 +1,186 @@
-# Sirelia - AI-Powered Mermaid Code Visualization
+# Sirelia - Real-time Mermaid Diagram Generation
 
-Sirelia is a Next.js application that generates and edits Mermaid diagrams with AI assistance and repository context. It provides a modern, intuitive interface for creating visual representations of code architecture and workflows.
+Sirelia is an npm package that provides real-time Mermaid diagram generation and visualization. It includes a web interface for editing diagrams and a file watcher that automatically updates diagrams when you save your `.sirelia.mdd` file.
 
 ## Features
 
 ### 🎯 Core Functionality
-- **AI-Powered Diagram Generation**: Use natural language to generate Mermaid diagrams from your codebase
 - **Real-time Mermaid Rendering**: Instant preview of diagrams as you edit
-- **CodeMirror Editor**: Advanced code editing with syntax highlighting and Mermaid support
-- **Repository Integration**: Connect to GitHub repositories for context-aware diagram generation
+- **File Watcher**: Automatically detects changes in `.sirelia.mdd` files
+- **Web Interface**: Modern, intuitive interface for diagram editing
+- **CodeMirror Editor**: Advanced code editing with syntax highlighting
+- **Multiple Diagram Support**: Handle multiple diagrams in a single file
 
 ### 🎨 User Interface
 - **Resizable Panels**: Flexible layout with collapsible and resizable panels
-- **Collapsible Tabs**: Organized sections for Assistant, Directory Navigator, Repository Management, and Configuration
 - **Modern Design**: Clean, responsive interface built with Tailwind CSS
-- **Icon Library**: Beautiful icons from Lucide React
+- **Real-time Updates**: See changes instantly as you edit
+- **Theme Support**: Light and dark mode support
 
 ### 🔧 Technical Stack
 - **Next.js 15**: App Router with TypeScript
 - **Tailwind CSS**: Utility-first styling
 - **CodeMirror 6**: Advanced code editor
 - **Mermaid v11**: Diagram rendering engine
-- **React Resizable Panels**: Flexible layout management
-- **GitHub API**: Repository structure and content access
+- **WebSocket**: Real-time communication
+- **Chokidar**: File watching capabilities
 
-## Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- GitHub Personal Access Token (optional for public repos, required for private repos)
+## Quick Start
 
 ### Installation
 
-1. Clone the repository:
+Install Sirelia as a **dev dependency**:
+
 ```bash
-git clone <repository-url>
-cd sirelia
+npm install --save-dev sirelia
 ```
 
-2. Install dependencies:
+or with yarn:
+
 ```bash
-npm install
+yarn add --dev sirelia
 ```
 
-3. Run the development server:
+### Initialize in Your Project
+
 ```bash
-npm run dev
+npx sirelia init
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+This will:
+- Create a `.sirelia.mdd` file with example diagrams
+- Add `.sirelia.mdd` to your `.gitignore`
+- Add a `sirelia:start` script to your `package.json`
+
+### Start Sirelia
+
+```bash
+npm run sirelia:start
+```
+
+This will:
+- Start the web server on http://localhost:3000
+- Start the bridge server on port 3001
+- Watch your `.sirelia.mdd` file for changes
+- Automatically send updates to the web interface
 
 ## Usage
 
-### Configuration
-1. Open the **Configuration** tab in the left panel
-2. Enter your GitHub repository URL (e.g., `https://github.com/username/repository`)
-3. Optionally provide a GitHub Personal Access Token:
-   - **Public repos**: Token is optional but provides higher rate limits
-   - **Private repos**: Token is required
-4. Configure your AI provider settings (OpenAI, Anthropic, or Custom)
-5. Save your configuration
+### 1. Edit Your Diagrams
 
-### Left Panel
-- **Assistant Tab**: Chat with AI to generate diagrams based on your repository
-- **Directory Navigator**: Browse your repository structure with real-time file tree
-- **Connected Repositories**: View and manage your repository connections
-- **Configuration**: Manage repository and AI settings
+Open the `.sirelia.mdd` file in your favorite editor and add Mermaid diagrams:
 
-### Right Panel
-- **Mermaid Viewer**: See your diagrams rendered in real-time
+```markdown
+# My Project Architecture
+
+```mermaid
+graph TD
+    A[Frontend] --> B[API Gateway]
+    B --> C[User Service]
+    B --> D[Product Service]
+    C --> E[Database]
+    D --> E
+```
+
+## API Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Database
+    
+    Client->>API: GET /users
+    API->>Database: SELECT * FROM users
+    Database-->>API: User data
+    API-->>Client: JSON response
+```
+```
+
+### 2. View in Web Interface
+
+Open http://localhost:3000 to see your diagrams rendered in real-time. The web interface provides:
+
+- **Diagram Viewer**: See your diagrams with zoom, pan, and export options
 - **Code Editor**: Edit Mermaid syntax with full IDE features
+- **Real-time Updates**: Changes appear instantly as you save your file
 
-### Quick Start
-1. Configure your repository in the Configuration tab
-2. Browse your code structure in the Directory Navigator
-3. Use the Assistant to generate diagrams based on your codebase
-4. Edit and refine diagrams in the Code Editor
+### 3. Advanced Usage
 
-## Repository Integration
+#### Custom Ports
 
-### Current Implementation
-- **GitHub API Integration**: Direct integration with GitHub's REST API
-- **Public Repository Support**: Access public repos without authentication (limited rate limits)
-- **Private Repository Support**: Full access with Personal Access Token
-- **Real-time File Tree**: Dynamic loading of repository structure
+```bash
+npx sirelia start --port 8080 --bridge-port 8081
+```
 
-### Future MCP Integration
-The application is designed to support MCP (Model Context Protocol) for enhanced repository access:
+#### Watch Different File
 
-- **Enhanced Context**: Deeper integration with repository content and history
-- **Code Analysis**: Advanced code understanding and diagram generation
-- **Multi-Repository Support**: Work with multiple repositories simultaneously
-- **Git Operations**: Direct git operations through MCP
+```bash
+npx sirelia start --watch diagrams.md
+```
+
+#### Force Reinitialize
+
+```bash
+npx sirelia init --force
+```
+
+## Supported Diagram Types
+
+- **Flowcharts**: `graph TD`, `flowchart LR`
+- **Sequence Diagrams**: `sequenceDiagram`
+- **Class Diagrams**: `classDiagram`
+- **State Diagrams**: `stateDiagram-v2`
+- **Entity Relationship**: `erDiagram`
+- **User Journey**: `journey`
+- **Gantt Charts**: `gantt`
+- **Pie Charts**: `pie`
+- **Git Graphs**: `gitgraph`
+- **Mind Maps**: `mindmap`
+- **Timeline**: `timeline`
+
+## CLI Commands
+
+### `sirelia init [options]`
+
+Initialize Sirelia in the current project.
+
+**Options:**
+- `-f, --force`: Force overwrite existing configuration
+
+### `sirelia start [options]`
+
+Start the Sirelia web server and bridge.
+
+**Options:**
+- `-p, --port <port>`: Web server port (default: 3000)
+- `-b, --bridge-port <port>`: Bridge server port (default: 3001)
+- `-w, --watch <file>`: Watch specific file (default: .sirelia.mdd)
 
 ## Project Structure
 
+After initialization, your project will have:
+
 ```
-src/
-├── app/
-│   ├── api/
-│   │   └── chat/
-│   │       └── route.ts          # AI chat API endpoint
-│   ├── globals.css               # Global styles
-│   ├── layout.tsx                # Root layout
-│   └── page.tsx                  # Main application page
-├── components/
-│   ├── tabs/
-│   │   ├── AssistantTab.tsx      # AI chat interface
-│   │   ├── DirectoryTab.tsx      # File tree navigator
-│   │   ├── RepositoriesTab.tsx   # Repository management
-│   │   └── ConfigurationTab.tsx  # Settings and configuration
-│   ├── CodeMirrorEditor.tsx      # Code editor component
-│   ├── ErrorBoundary.tsx         # Error handling
-│   ├── LeftPanel.tsx             # Left panel with tabs
-│   └── RightPanel.tsx            # Diagram viewer and editor
+your-project/
+├── .sirelia.mdd          # Your Mermaid diagrams
+├── .gitignore           # Updated to ignore .sirelia.mdd
+└── package.json         # Updated with sirelia:start script
 ```
-
-## Configuration
-
-### Repository Settings
-- **Repository URL**: Full GitHub repository URL
-- **Access Token**: GitHub Personal Access Token (optional for public repos)
-- **Connection Status**: Real-time connection status and error handling
-
-### AI Configuration
-- **Provider Selection**: OpenAI, Anthropic, or Custom
-- **Model Selection**: Curated model options for each provider
-- **Temperature**: Control creativity vs focus (0.0 - 2.0)
-- **Max Tokens**: Response length limit (100 - 8000)
-- **API Key**: Your AI provider API key
-
-### Local Storage
-All configuration is stored locally in the browser for convenience and privacy.
 
 ## Development
 
-### Available Scripts
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+### Building the Package
 
-### Adding New Features
-1. Create components in `src/components/`
-2. Add API routes in `src/app/api/`
-3. Update types and interfaces as needed
-4. Test with hot reload enabled
+```bash
+npm run package:build
+```
+
+### Publishing
+
+```bash
+npm publish
+```
 
 ## Contributing
 
@@ -162,16 +196,13 @@ This project is licensed under the MIT License.
 
 ## Roadmap
 
-- [x] GitHub API integration for repository access
-- [x] Real-time file tree navigation
-- [x] AI configuration with multiple providers
-- [x] Repository connection management
-- [ ] Full MCP integration for enhanced repository access
-- [ ] Advanced AI provider integration with streaming
-- [ ] Diagram templates and presets
+- [x] File watcher for automatic updates
+- [x] Web interface for diagram editing
+- [x] Real-time WebSocket communication
+- [x] CLI commands for easy setup
+- [ ] AI-powered diagram generation
+- [ ] Repository integration
 - [ ] Export functionality (PNG, SVG, PDF)
 - [ ] Collaboration features
 - [ ] Custom themes and styling
 - [ ] Plugin system for diagram types
-- [ ] Multi-repository support
-- [ ] Git operations integration

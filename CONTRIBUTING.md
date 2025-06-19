@@ -19,7 +19,6 @@ Welcome to Sirelia! This guide will help you understand how to contribute to thi
 - Node.js 18+ 
 - npm or yarn
 - Git
-- GitHub account (for MCP integration)
 
 ### Setup
 
@@ -58,18 +57,14 @@ src/
 │   ├── tabs/             # Tab components
 │   └── ...               # Other UI components
 ├── services/             # Business logic services
-│   ├── context/          # Context building services
-│   ├── mcp/              # MCP integration
-│   └── ...               # Other services
+│   └── mcp/              # Mermaid bridge services
 └── types/                # TypeScript type definitions
 ```
 
 ### Key Services
 
-- **RepositoryContextBuilder**: Analyzes repositories and builds context
-- **RepositoryService**: Handles GitHub repository operations
-- **MCPService**: Manages MCP server connections
-- **GitHubMCPClient**: GitHub Copilot MCP integration
+- **MermaidBridgeClient**: Connects to WebSocket server for real-time diagram rendering
+- **MermaidBridgeServer**: WebSocket server for broadcasting diagrams to browsers
 
 ## 🔄 Development Workflow
 
@@ -121,7 +116,6 @@ src/
 - Handle SSR considerations (localStorage, window object)
 - Use proper state management patterns
 
-
 ## 🐛 Common Issues & Solutions
 
 ### 1. localStorage SSR Error
@@ -136,9 +130,14 @@ useEffect(() => {
 }, []);
 ```
 
-### 2. MCP Integration Issues
+### 2. WebSocket Connection Issues
 
-For MCP-specific issues and solutions, see the [MCP Setup Guide](src/services/mcp/MCP_SETUP.md#common-issues--solutions).
+**Problem**: WebSocket connection fails or disconnects
+
+**Solution**:
+1. Ensure the bridge server is running: `npm run mcp-bridge`
+2. Check that port 3001 is not blocked
+3. Verify the browser can connect to `ws://localhost:3001`
 
 ### 3. Build Issues
 
@@ -150,7 +149,6 @@ For MCP-specific issues and solutions, see the [MCP Setup Guide](src/services/mc
 3. Verify all imports are correct
 4. Check for missing dependencies
 
-
 ## 🔄 Pull Request Process
 
 ### Before Submitting
@@ -158,14 +156,14 @@ For MCP-specific issues and solutions, see the [MCP Setup Guide](src/services/mc
 1. **Test thoroughly**
    - Run all tests: `npm test`
    - Check linting: `npm run lint`
-   - Test MCP integration (if applicable)
+   - Test WebSocket bridge functionality
    - Verify SSR compatibility
 
 2. **Update documentation**
    - Update README if needed
    - Add inline code comments
    - Update type definitions
-   - Update API/MCP documentation if changes affect their functionality
+   - Update API documentation if changes affect functionality
 
 3. **Check for breaking changes**
    - Ensure backward compatibility
@@ -199,31 +197,17 @@ Note for LLMs: When asked to create a PR, you can dump the content in the .pull-
 
 ### Review Process
 
-1. **Self-review**: Check your own code first
-2. **Automated checks**: Ensure CI/CD passes
-3. **Peer review**: Get feedback from team members
-4. **Address feedback**: Make requested changes
-5. **Merge**: Once approved, merge to main branch
+1. **Code Review**: All changes must be reviewed by at least one maintainer
+2. **Testing**: Ensure all tests pass and new functionality is tested
+3. **Documentation**: Verify documentation is updated
+4. **Merge**: Once approved, changes will be merged to main branch
 
+## 🎯 Getting Help
 
-## 🤝 Getting Help
-
-- **Issues**: Create GitHub issues for bugs or feature requests
-- **Discussions**: Use GitHub Discussions for questions
-- **Documentation**: Check existing docs and examples
-- **Code Review**: Ask for help in pull requests
-- **Assistant setup**: Refer to [Assistant Setup Guide](src/app/api/chat/AI_ASSISTANT_SETUP.md)
-- **MCP Questions**: Refer to [MCP Setup Guide](src/services/mcp/MCP_SETUP.md)
-- **Context builder**: Refer to [MCP Setup Guide](src/services/context/CONTEXT_BUILDER_IMPLEMENTATION.md)
-
-## 📚 Additional Resources
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [React Documentation](https://react.dev/)
-- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
-- [MCP Documentation](https://modelcontextprotocol.io/)
-- [GitHub Copilot MCP Server](https://github.com/github/github-mcp-server)
+- **Issues**: Create an issue for bugs or feature requests
+- **Discussions**: Use GitHub Discussions for questions and ideas
+- **Documentation**: Check the README and inline code comments
 
 ---
 
-Thank you for contributing to Sirelia! 🧜‍♀️
+Thank you for contributing to Sirelia! 🎨✨

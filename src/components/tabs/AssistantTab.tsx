@@ -1,298 +1,148 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Send, Sparkles, Bot, AlertCircle } from 'lucide-react';
-import { AIConfig, RepositoryConfig, ChatMessage } from '../../types/ai';
-import { RepositoryContextRequest } from '../../types/context';
+import { useState, useRef, useEffect } from 'react';
+import { Send, Loader2 } from 'lucide-react';
 
-interface AssistantTabProps {
-  onGenerateDiagram: (code: string) => void;
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
 }
 
-export default function AssistantTab({ onGenerateDiagram }: AssistantTabProps) {
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: 'Hello! I can help you generate Mermaid diagrams from your codebase. Try asking me to analyze your repository or generate a specific diagram.' }
-  ]);
+interface AssistantTabProps {
+  onGenerateDiagram?: (code: string) => void;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function AssistantTab(props: AssistantTabProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [aiConfig, setAIConfig] = useState<AIConfig | null>(null);
-  const [repoConfig, setRepoConfig] = useState<RepositoryConfig | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load configuration from localStorage
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   useEffect(() => {
-    const loadConfiguration = () => {
-      const savedAIConfig = localStorage.getItem('sirelia-ai-config');
-      const savedRepoConfig = localStorage.getItem('sirelia-repo-config');
-      
-      if (savedAIConfig) {
-        try {
-          const parsed = JSON.parse(savedAIConfig);
-          setAIConfig(parsed);
-        } catch (error) {
-          console.error('Error loading AI config:', error);
-        }
-      }
-      
-      if (savedRepoConfig) {
-        try {
-          const parsed = JSON.parse(savedRepoConfig);
-          setRepoConfig(parsed);
-        } catch (error) {
-          console.error('Error loading repo config:', error);
-        }
-      }
-    };
-
-    loadConfiguration();
-
-    // Listen for configuration updates
-    const handleAIConfigUpdate = () => {
-      loadConfiguration();
-    };
-
-    const handleRepoConfigUpdate = () => {
-      loadConfiguration();
-    };
-
-    window.addEventListener('aiConfigUpdated', handleAIConfigUpdate);
-    window.addEventListener('repositoryConnected', handleRepoConfigUpdate);
-
-    return () => {
-      window.removeEventListener('aiConfigUpdated', handleAIConfigUpdate);
-      window.removeEventListener('repositoryConnected', handleRepoConfigUpdate);
-    };
-  }, []);
+    scrollToBottom();
+  }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading) return;
 
-    // Check if AI is configured
-    if (!aiConfig?.apiKey) {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Please configure your AI provider in the Configuration tab before using the assistant.' 
-      }]);
-      return;
-    }
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: inputValue,
+      timestamp: new Date()
+    };
 
-    const userMessage = input.trim();
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
     setIsLoading(true);
 
     try {
-      // Build context request if repository is connected
-      const contextRequest: RepositoryContextRequest | undefined = repoConfig?.isConnected ? {
-        repositoryUrl: repoConfig.url,
-        userRequest: userMessage,
-        selectedFiles: [] // Will be enhanced later with file selection
-      } : undefined;
+      // For now, just echo back the message since we removed the chat API
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `I received your message: "${inputValue}". The chat functionality has been simplified to focus on the Mermaid bridge. You can send Mermaid diagrams directly to the bridge API at /api/mermaid-bridge.`,
+        timestamp: new Date()
+      };
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: messages.concat([{ role: 'user', content: userMessage }]),
-          config: aiConfig,
-          contextRequest // New optional parameter
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body');
-      }
-
-      let assistantMessage = '';
-      const decoder = new TextDecoder();
-
-      // Add initial assistant message
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          assistantMessage += chunk;
-
-          // Update the last message (assistant's response)
-          setMessages(prev => {
-            const newMessages = [...prev];
-            if (newMessages.length > 0) {
-              newMessages[newMessages.length - 1] = {
-                ...newMessages[newMessages.length - 1],
-                content: assistantMessage,
-              };
-            }
-            return newMessages;
-          });
-        }
-      } finally {
-        reader.releaseLock();
-      }
-
-      // Check if the response contains Mermaid code and extract it
-      const mermaidMatch = assistantMessage.match(/```mermaid\s*([\s\S]*?)\s*```/);
-      if (mermaidMatch) {
-        const mermaidCode = mermaidMatch[1].trim();
-        onGenerateDiagram(mermaidCode);
-      }
-
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error calling AI API:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, I encountered an error while processing your request. Please check your AI configuration and try again.' 
-      }]);
+      console.error('Error sending message:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Sorry, there was an error processing your message.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGenerateLoginFlow = () => {
-    // Check if repository is connected
-    if (!repoConfig?.isConnected) {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Please connect a repository in the Configuration tab before generating diagrams.' 
-      }]);
-      return;
-    }
-
-    const loginFlowCode = `graph TD
-    A[User visits app] --> B{Is user logged in?}
-    B -->|No| C[Show login form]
-    B -->|Yes| D[Redirect to dashboard]
-    C --> E[User enters credentials]
-    E --> F[Validate credentials]
-    F -->|Invalid| G[Show error message]
-    F -->|Valid| H[Create session]
-    G --> C
-    H --> I[Redirect to dashboard]
-    I --> J[User can access protected routes]`;
-    
-    onGenerateDiagram(loginFlowCode);
-    
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
-      content: 'I\'ve generated a login flow diagram for you! Check the right panel to see it rendered.' 
-    }]);
-  };
-
-  const getStatusMessage = () => {
-    if (!aiConfig?.apiKey) {
-      return { type: 'error', message: 'AI not configured', icon: AlertCircle };
-    }
-    if (!repoConfig?.isConnected) {
-      return { type: 'warning', message: 'Repository not connected', icon: AlertCircle };
-    }
-    return { type: 'success', message: 'Ready to assist', icon: Bot };
-  };
-
-  const status = getStatusMessage();
-
   return (
-    <div className="space-y-3 h-full flex flex-col">
-      {/* Status Indicator */}
-      <div className={`flex items-center space-x-2 p-2 rounded-md text-xs flex-shrink-0 ${
-        status.type === 'error' 
-          ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800' 
-          : status.type === 'warning'
-          ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800'
-          : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
-      }`}>
-        <status.icon className="w-3 h-3" />
-        <span>{status.message}</span>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Assistant
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Bridge-focused diagram assistant
+        </p>
       </div>
 
       {/* Messages */}
-      <div className="space-y-2 overflow-y-auto scrollbar-hide flex-1 min-h-0">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`p-2 rounded-lg text-sm ${
-              message.role === 'user'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 ml-4'
-                : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 mr-4 border border-gray-200 dark:border-gray-600 shadow-sm'
-            }`}
-          >
-            {message.content}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+            <p>Send a message to get started!</p>
+            <p className="text-sm mt-2">
+              The bridge API is available at <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">/api/mermaid-bridge</code>
+            </p>
           </div>
-        ))}
+        ) : (
+          messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  message.role === 'user'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                }`}
+              >
+                <p className="text-sm">{message.content}</p>
+                <p className="text-xs opacity-70 mt-1">
+                  {message.timestamp.toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
         {isLoading && (
-          <div className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-2 rounded-lg text-sm mr-4 border border-gray-200 dark:border-gray-600 shadow-sm">
-            Thinking...
+          <div className="flex justify-start">
+            <div className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Thinking...</span>
+              </div>
+            </div>
           </div>
         )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex flex-wrap gap-2 flex-shrink-0 text-xs font-medium">
-        <button
-          onClick={handleGenerateLoginFlow}
-          disabled={!repoConfig?.isConnected}
-          className="inline-flex items-center space-x-2 px-4 py-2 text-blue-600 bg-transparent border border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:border-gray-400 dark:disabled:border-gray-600 rounded-full transition-colors"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Generate Login Flow</span>
-        </button>
-        
-        <button
-          onClick={() => setInput('Generate a component architecture diagram for this codebase')}
-          disabled={!aiConfig?.apiKey}
-          className="inline-flex items-center space-x-2 px-4 py-2 text-gray-700 bg-transparent border border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700/50 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:border-gray-400 dark:disabled:border-gray-600 rounded-full transition-colors"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Component Architecture</span>
-        </button>
-        
-        <button
-          onClick={() => setInput('Create a database schema diagram')}
-          disabled={!aiConfig?.apiKey}
-          className="inline-flex items-center space-x-2 px-4 py-2 text-gray-700 bg-transparent border border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700/50 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:border-gray-400 dark:disabled:border-gray-600 rounded-full transition-colors"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Database Schema</span>
-        </button>
-        
-        <button
-          onClick={() => setInput('Show me a sequence diagram for the main user flow')}
-          disabled={!aiConfig?.apiKey}
-          className="inline-flex items-center space-x-2 px-4 py-2 text-gray-700 bg-transparent border border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700/50 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:border-gray-400 dark:disabled:border-gray-600 rounded-full transition-colors"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>User Flow Sequence</span>
-        </button>
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex space-x-2 flex-shrink-0">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask me to analyze your code..."
-          className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-          disabled={isLoading || !aiConfig?.apiKey}
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || isLoading || !aiConfig?.apiKey}
-          className="px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 rounded-md transition-colors"
-        >
-          <Send className="w-4 h-4" />
-        </button>
-      </form>
+      <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
+        <form onSubmit={handleSubmit} className="flex space-x-2">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Type your message..."
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            disabled={isLoading}
+          />
+          <button
+            type="submit"
+            disabled={isLoading || !inputValue.trim()}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </form>
+      </div>
     </div>
   );
 } 

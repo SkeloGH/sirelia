@@ -1,0 +1,42 @@
+# Sirelia Diagram
+
+This file contains your Mermaid diagrams. Edit this file and save to see real-time updates in the Sirelia web interface.
+
+## Example Diagram
+
+```mermaid
+graph TD
+    A[Start] --> B{Decision?}
+    B -->|Yes| C[Do Something]
+    B -->|No| D[Do Nothing]
+    C --> E[End]
+    D --> E
+```
+
+## Usage
+
+1. Edit this file with your Mermaid diagrams
+2. Save the file to see real-time updates
+3. Open http://localhost:3000 to view the web interface
+4. Use the web interface to edit and refine your diagrams
+
+## Supported Diagram Types
+
+- Flowcharts: `graph TD`, `flowchart LR`
+- Sequence Diagrams: `sequenceDiagram`
+- Class Diagrams: `classDiagram`
+- State Diagrams: `stateDiagram-v2`
+- Entity Relationship: `erDiagram`
+- User Journey: `journey`
+- Gantt Charts: `gantt`
+- Pie Charts: `pie`
+- Git Graphs: `gitgraph`
+- Mind Maps: `mindmap`
+- Timeline: `timeline`
+
+## Tips
+
+- Use markdown code blocks with `mermaid` language identifier
+- You can have multiple diagrams in one file
+- Diagrams are automatically detected and sent to the web interface
+- The web interface provides real-time editing capabilities 

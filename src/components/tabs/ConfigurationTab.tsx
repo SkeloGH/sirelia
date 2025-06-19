@@ -49,7 +49,7 @@ export default function ConfigurationTab() {
     serverUrl: '',
     token: '',
     headers: {},
-    name: 'sirelia-mcp-client',
+    name: 'sirelia-bridge-client',
     isEnabled: false,
     isConnected: false
   });
@@ -660,19 +660,6 @@ export default function ConfigurationTab() {
                     />
                     <Key className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute right-3 top-2.5" />
                   </div>
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Client Name
-                  </label>
-                  <input
-                    type="text"
-                    value={mcpConfig.name}
-                    onChange={(e) => handleMCPConfigChange('name', e.target.value)}
-                    placeholder="Enter your MCP client name"
-                    className="text-black dark:text-white w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-                  />
                 </div>
                 
                 <button
