@@ -111,8 +111,30 @@ export class RepositoryService {
       }
       
       try {
-        const result = await this.githubMcpClient.callTool('get_repository_info', { owner, repo });
-        return result as MCPRepositoryInfo;
+        // GitHub Copilot doesn't have a direct get_repository_info tool
+        // We'll construct repository info from available data
+        const repoInfo: MCPRepositoryInfo = {
+          name: repo,
+          owner: owner,
+          description: '',
+          url: `https://github.com/${owner}/${repo}`,
+          defaultBranch: 'main',
+          isPrivate: false
+        };
+
+        // Try to get README or package.json for more info
+        try {
+          const readmeContent = await this.getFileContent(owner, repo, 'README.md');
+          if (readmeContent) {
+            // Extract description from README (first paragraph)
+            const firstParagraph = readmeContent.split('\n\n')[0];
+            repoInfo.description = firstParagraph.replace(/^#\s+.*\n/, '').trim();
+          }
+        } catch {
+          console.log('Could not fetch README for repository info');
+        }
+
+        return repoInfo;
       } catch (error) {
         console.error('Failed to get repository info from GitHub Copilot:', error);
         return null;
@@ -149,8 +171,27 @@ export class RepositoryService {
       }
       
       try {
-        const result = await this.githubMcpClient.callTool('get_file_content', { owner, repo, path });
-        return (result as { content?: string })?.content || null;
+        // Use the correct tool name: get_file_contents
+        const result = await this.githubMcpClient.callTool('get_file_contents', { 
+          owner, 
+          repo, 
+          path 
+        });
+        
+        // The response structure might be different, handle various formats
+        if (typeof result === 'string') {
+          return result;
+        } else if (result && typeof result === 'object') {
+          // Try different possible response structures
+          const response = result as Record<string, unknown>;
+          const content = response.content || 
+                         response.data || 
+                         response.text ||
+                         response.body;
+          return typeof content === 'string' ? content : null;
+        }
+        
+        return null;
       } catch (error) {
         console.error('Failed to get file content from GitHub Copilot:', error);
         return null;
@@ -187,8 +228,27 @@ export class RepositoryService {
       }
       
       try {
-        const result = await this.githubMcpClient.callTool('list_files', { owner, repo, path });
-        return Array.isArray(result) ? result as MCPFileInfo[] : [];
+        // Use get_file_contents with directory path (ends with /)
+        const dirPath = path.endsWith('/') ? path : path + '/';
+        const result = await this.githubMcpClient.callTool('get_file_contents', { 
+          owner, 
+          repo, 
+          path: dirPath 
+        });
+        
+        // Parse directory listing from the response
+        if (Array.isArray(result)) {
+          return result as MCPFileInfo[];
+        } else if (result && typeof result === 'object') {
+          // Handle different response formats
+          const response = result as Record<string, unknown>;
+          const files = response.files || 
+                       response.contents || 
+                       response.items;
+          return Array.isArray(files) ? files as MCPFileInfo[] : [];
+        }
+        
+        return [];
       } catch (error) {
         console.error('Failed to list files from GitHub Copilot:', error);
         return [];

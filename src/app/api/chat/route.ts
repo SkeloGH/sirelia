@@ -1,10 +1,16 @@
 import { Configuration, OpenAIApi } from 'openai-edge';
 import Anthropic from '@anthropic-ai/sdk';
 import { AIConfig, ChatMessage } from '../../../types/ai';
+import { RepositoryContextBuilder } from '../../../services/context/RepositoryContextBuilder';
+import { RepositoryContextRequest, RepositoryContext } from '../../../types/context';
 
 export async function POST(request: Request) {
   try {
-    const { messages, config }: { messages: ChatMessage[]; config: AIConfig } = await request.json();
+    const { messages, config, contextRequest }: { 
+      messages: ChatMessage[]; 
+      config: AIConfig;
+      contextRequest?: RepositoryContextRequest;
+    } = await request.json();
     
     if (!config?.apiKey) {
       return new Response('API key is required', { status: 400 });
@@ -12,22 +18,21 @@ export async function POST(request: Request) {
 
     const { provider, model, temperature, maxTokens } = config;
 
-    // System prompt for Mermaid diagram generation
-    const systemPrompt = `You are an AI assistant specialized in generating Mermaid diagrams from codebases. 
-
-Your role is to:
-1. Analyze code structure and architecture
-2. Generate clear, accurate Mermaid diagrams
-3. Provide explanations for your diagrams
-4. Suggest improvements or alternative visualizations
-
-When generating diagrams:
-- Use appropriate Mermaid syntax (graph TD, flowchart, sequenceDiagram, etc.)
-- Keep diagrams readable and well-organized
-- Include meaningful labels and relationships
-- Focus on the most important architectural elements
-
-Always respond with clear explanations and well-formatted Mermaid code blocks.`;
+    // Build enhanced system prompt if context is available
+    let systemPrompt = getBaseSystemPrompt();
+    
+    if (contextRequest) {
+      try {
+        const contextBuilder = new RepositoryContextBuilder();
+        const context = await contextBuilder.buildContext(contextRequest);
+        
+        // Enhance system prompt with repository context
+        systemPrompt += buildRepositoryContextPrompt(context);
+      } catch (error) {
+        console.warn('Failed to build repository context:', error);
+        // Continue without context
+      }
+    }
 
     if (provider === 'openai') {
       const configuration = new Configuration({
@@ -166,4 +171,45 @@ This shows how a custom AI provider would be integrated into the system.`;
     console.error('Chat API error:', error);
     return new Response('Internal server error', { status: 500 });
   }
+}
+
+// Helper functions
+function getBaseSystemPrompt(): string {
+  return `You are an AI assistant specialized in generating Mermaid diagrams from codebases. 
+
+Your role is to:
+1. Analyze code structure and architecture
+2. Generate clear, accurate Mermaid diagrams
+3. Provide explanations for your diagrams
+4. Suggest improvements or alternative visualizations
+
+When generating diagrams:
+- Use appropriate Mermaid syntax (graph TD, flowchart, sequenceDiagram, etc.)
+- Keep diagrams readable and well-organized
+- Include meaningful labels and relationships
+- Focus on the most important architectural elements
+
+Always respond with clear explanations and well-formatted Mermaid code blocks.`;
+}
+
+function buildRepositoryContextPrompt(context: RepositoryContext): string {
+  return `
+
+REPOSITORY CONTEXT:
+Repository: ${context.repository.name}
+Description: ${context.repository.description}
+
+Relevant Files (${context.context.fileCount}):
+${context.repository.relevantFiles.map((file) => 
+  `- ${file.path} (${file.type}, ${file.size} chars)`
+).join('\n')}
+
+File Types: ${Object.entries(context.context.fileTypes)
+  .map(([type, count]) => `${type}: ${count}`)
+  .join(', ')}
+
+User Intent: ${context.userRequest.intent}
+Suggested Diagram Type: ${context.userRequest.diagramType}
+
+Use this repository context to generate accurate, codebase-specific diagrams. Focus on the relevant files and their relationships.`;
 } 
