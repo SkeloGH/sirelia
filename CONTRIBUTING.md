@@ -7,7 +7,6 @@ Welcome to Sirelia! This guide will help you understand how to contribute to thi
 - [Getting Started](#getting-started)
 - [Project Architecture](#project-architecture)
 - [Development Workflow](#development-workflow)
-- [MCP Integration Guidelines](#mcp-integration-guidelines)
 - [Testing Guidelines](#testing-guidelines)
 - [Code Style & Standards](#code-style--standards)
 - [Common Issues & Solutions](#common-issues--solutions)
@@ -100,104 +99,16 @@ src/
 
 ### 2. MCP Integration Development
 
-When working with MCP (Model Context Protocol) integration:
+When working with MCP (Model Context Protocol) integration, refer to the comprehensive guide:
 
-1. **Discover available tools first**
-   - Use the test page at `/test-context`
-   - Click "Check Available Tools" to see what's available
-   - Check server logs for detailed tool information
+📖 **MCP Development Guidelines**: See [`src/services/mcp/MCP_SETUP.md`](src/services/mcp/MCP_SETUP.md)
 
-2. **Handle tool name differences**
-   - GitHub Copilot uses `get_file_contents` (not `get_file_content`)
-   - Always verify tool names before implementation
-
-3. **Test response formats**
-   - MCP responses can have various structures
-   - Implement flexible parsing with fallbacks
-
-## 🔗 MCP Integration Guidelines
-
-### Understanding MCP
-
-The Model Context Protocol (MCP) enables AI models to interact with external systems. Sirelia integrates with GitHub Copilot's MCP server for repository access.
-
-### Key Concepts
-
-- **Tools**: Executable functions exposed by MCP servers
-- **Resources**: Read-only data sources
-- **Client/Server**: MCP clients connect to MCP servers
-
-### Best Practices
-
-#### 1. Tool Discovery
-```typescript
-// Always discover tools before using them
-const availableTools = await repoService.getAvailableTools();
-console.log('Available tools:', availableTools);
-```
-
-#### 2. Error Handling
-```typescript
-try {
-  const result = await mcpClient.callTool('tool_name', args);
-  return result;
-} catch (error) {
-  console.error('Tool call failed:', error);
-  // Implement fallback or graceful degradation
-  return null;
-}
-```
-
-#### 3. Response Parsing
-```typescript
-// Handle various response formats
-const content = response.content || 
-               response.data || 
-               response.text ||
-               response.body;
-```
-
-#### 4. Connection Management
-```typescript
-// Check connection status before making calls
-if (!mcpClient.isConnected()) {
-  throw new Error('MCP client not connected');
-}
-```
-
-### Common MCP Tools
-
-#### GitHub Copilot MCP Server (47 tools available)
-
-**Repository Operations:**
-- `get_file_contents` - Get file or directory contents
-- `list_branches` - List repository branches
-- `list_commits` - Get commit history
-- `get_commit` - Get commit details
-
-**Search Operations:**
-- `search_code` - Search for code across repositories
-- `search_repositories` - Search for GitHub repositories
-- `search_issues` - Search for issues
-
-**Repository Management:**
-- `create_repository` - Create new repository
-- `fork_repository` - Fork existing repository
-- `create_branch` - Create new branch
-
-### MCP Configuration
-
-Store MCP configuration in localStorage:
-```typescript
-const mcpConfig = {
-  serverUrl: 'https://api.githubcopilot.com/mcp/',
-  isConnected: true,
-  isEnabled: true,
-  token: 'your-token-here'
-};
-
-localStorage.setItem('sirelia-mcp-config', JSON.stringify(mcpConfig));
-```
+The MCP setup guide includes:
+- Detailed MCP integration workflow
+- Tool discovery and usage patterns
+- Common issues and solutions
+- Code examples and best practices
+- Testing strategies for MCP functionality
 
 ## 🧪 Testing Guidelines
 
@@ -208,6 +119,8 @@ localStorage.setItem('sirelia-mcp-config', JSON.stringify(mcpConfig));
 3. **E2E Tests**: Test complete user workflows
 
 ### Testing MCP Integration
+
+For MCP-specific testing, see the [MCP Setup Guide](src/services/mcp/MCP_SETUP.md#testing-mcp-integration).
 
 #### Test Page
 Use the interactive test page at `/test-context`:
@@ -304,36 +217,29 @@ useEffect(() => {
 }, []);
 ```
 
-### 2. MCP Tool Not Found
+### 2. MCP Integration Issues
 
-**Problem**: `Tool 'tool_name' not found` error
+For MCP-specific issues and solutions, see the [MCP Setup Guide](src/services/mcp/MCP_SETUP.md#common-issues--solutions).
 
-**Solution**: 
-1. Check available tools first
-2. Verify tool names match exactly
-3. Implement fallback mechanisms
+### 3. Build Issues
 
-### 3. MCP Response Parsing
-
-**Problem**: Unexpected response format
-
-**Solution**: Implement flexible parsing
-```typescript
-const content = response.content || 
-               response.data || 
-               response.text ||
-               response.body;
-```
-
-### 4. Connection Issues
-
-**Problem**: MCP connection failures
+**Problem**: Build failures or compilation errors
 
 **Solution**:
-1. Check network connectivity
-2. Verify MCP server URL
-3. Check authentication tokens
-4. Implement retry logic
+1. Check TypeScript errors: `npm run type-check`
+2. Fix linting issues: `npm run lint`
+3. Verify all imports are correct
+4. Check for missing dependencies
+
+### 4. Performance Issues
+
+**Problem**: Slow development server or build times
+
+**Solution**:
+1. Clear Next.js cache: `rm -rf .next`
+2. Clear node_modules: `rm -rf node_modules && npm install`
+3. Check for large dependencies
+4. Optimize imports and bundle size
 
 ## 🔄 Pull Request Process
 
@@ -342,13 +248,14 @@ const content = response.content ||
 1. **Test thoroughly**
    - Run all tests: `npm test`
    - Check linting: `npm run lint`
-   - Test MCP integration
+   - Test MCP integration (if applicable)
    - Verify SSR compatibility
 
 2. **Update documentation**
    - Update README if needed
    - Add inline code comments
    - Update type definitions
+   - Update MCP documentation if changes affect MCP functionality
 
 3. **Check for breaking changes**
    - Ensure backward compatibility
@@ -412,13 +319,15 @@ Future improvements or follow-up tasks
 - **Discussions**: Use GitHub Discussions for questions
 - **Documentation**: Check existing docs and examples
 - **Code Review**: Ask for help in pull requests
+- **MCP Questions**: Refer to [MCP Setup Guide](src/services/mcp/MCP_SETUP.md)
 
 ## 📚 Additional Resources
 
-- [MCP Documentation](https://modelcontextprotocol.io/)
-- [GitHub Copilot MCP Server](https://github.com/github/github-mcp-server)
 - [Next.js Documentation](https://nextjs.org/docs)
 - [React Documentation](https://react.dev/)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+- [MCP Documentation](https://modelcontextprotocol.io/)
+- [GitHub Copilot MCP Server](https://github.com/github/github-mcp-server)
 
 ---
 
