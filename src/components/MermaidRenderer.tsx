@@ -436,15 +436,17 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
       const svgWidth = svgElement.viewBox?.baseVal?.width || svgRect.width;
       const svgHeight = svgElement.viewBox?.baseVal?.height || svgRect.height;
 
+      // Use fallback dimensions if SVG dimensions are falsy
+      const finalWidth = svgWidth || 800;
+      const finalHeight = svgHeight || 600;
+
       if (!svgWidth || !svgHeight) {
         console.warn('SVG has no dimensions, using fallback size');
-        canvas.width = 800;
-        canvas.height = 600;
-      } else {
-        // Use the actual SVG dimensions for high quality export
-        canvas.width = svgWidth * 2; // Higher resolution
-        canvas.height = svgHeight * 2;
       }
+
+      // Use the final dimensions for high quality export
+      canvas.width = finalWidth * 2; // Higher resolution
+      canvas.height = finalHeight * 2;
 
       // Convert SVG to data URL with proper styling
       const svgData = new XMLSerializer().serializeToString(svgElement);
@@ -455,7 +457,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
 
       // Create image and draw to canvas
       const imageElement = new window.Image();
-      imageElement.crossOrigin = 'anonymous'; // Handle CORS if needed
+      imageElement.crossOrigin = 'anonymous';
       
       imageElement.onload = () => {
         try {
@@ -466,8 +468,8 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
           // Scale for higher resolution
           ctx.scale(2, 2);
           
-          // Draw the image
-          ctx.drawImage(imageElement, 0, 0, svgWidth, svgHeight);
+          // Draw the image using the final dimensions
+          ctx.drawImage(imageElement, 0, 0, finalWidth, finalHeight);
           
           // Convert to PNG and download
           canvas.toBlob((blob) => {
@@ -486,19 +488,19 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
           }, 'image/png', 0.95);
         } catch (error) {
           console.error('Error drawing image to canvas:', error);
+        } finally {
+          // Clean up the SVG URL after successful load and processing
+          URL.revokeObjectURL(url);
         }
       };
       
       imageElement.onerror = () => {
         console.error('Failed to load SVG as image');
+        // Clean up the SVG URL on error
+        URL.revokeObjectURL(url);
       };
       
       imageElement.src = url;
-      
-      // Clean up the URL after a delay
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 1000);
       
     } catch (error) {
       console.error('Failed to export as PNG:', error);
