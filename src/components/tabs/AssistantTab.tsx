@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Send, Sparkles, Bot, AlertCircle } from 'lucide-react';
 import { AIConfig, RepositoryConfig, ChatMessage } from '../../types/ai';
+import { RepositoryContextRequest } from '../../types/context';
 
 interface AssistantTabProps {
   onGenerateDiagram: (code: string) => void;
@@ -81,6 +82,13 @@ export default function AssistantTab({ onGenerateDiagram }: AssistantTabProps) {
     setIsLoading(true);
 
     try {
+      // Build context request if repository is connected
+      const contextRequest: RepositoryContextRequest | undefined = repoConfig?.isConnected ? {
+        repositoryUrl: repoConfig.url,
+        userRequest: userMessage,
+        selectedFiles: [] // Will be enhanced later with file selection
+      } : undefined;
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -89,6 +97,7 @@ export default function AssistantTab({ onGenerateDiagram }: AssistantTabProps) {
         body: JSON.stringify({
           messages: messages.concat([{ role: 'user', content: userMessage }]),
           config: aiConfig,
+          contextRequest // New optional parameter
         }),
       });
 

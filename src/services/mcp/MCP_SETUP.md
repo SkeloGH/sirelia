@@ -17,6 +17,7 @@ The MCP integration provides:
 src/services/mcp/
 ├── types.ts              # MCP type definitions
 ├── mcp-client.ts         # Core MCP client wrapper
+├── github-mcp-client.ts  # GitHub Copilot MCP client
 ├── repository-service.ts # High-level repository operations
 └── index.ts             # Service exports
 ```
@@ -33,16 +34,16 @@ src/app/api/mcp/
 
 1. Open the **Configuration** tab in the left panel
 2. Expand the **MCP Configuration** section
-3. Enter your MCP server URL (e.g., `https://mcp.example.com`)
+3. Enter your MCP server URL (e.g., `https://api.githubcopilot.com/mcp/`)
 4. Optionally provide an access token if required
 5. Set a client name (defaults to `sirelia-mcp-client`)
 6. Click **Connect to MCP Server**
 
 ### 2. Test Connection
 
-1. Navigate to `/test-mcp` to access the MCP test page
-2. Click **Test Connection** to verify the connection
-3. Click **Get Tools** to see available MCP tools
+1. Navigate to `/test-context` to access the MCP test page
+2. Click **Check Available Tools** to see available MCP tools
+3. Click **Test Context Builder** to validate repository analysis
 
 ### 3. API Usage
 
@@ -56,7 +57,7 @@ const response = await fetch('/api/mcp', {
   body: JSON.stringify({
     action: 'connect',
     config: {
-      serverUrl: 'https://mcp.example.com',
+      serverUrl: 'https://api.githubcopilot.com/mcp/',
       token: 'your-token',
       name: 'sirelia-mcp-client'
     }
@@ -175,7 +176,7 @@ const repoService = new RepositoryService();
 
 // Connect to GitHub MCP server
 await repoService.connectToGitHub({
-  serverUrl: 'https://github-mcp.example.com',
+  serverUrl: 'https://api.githubcopilot.com/mcp/',
   token: 'your-github-token'
 });
 
@@ -198,94 +199,314 @@ The MCP tools are automatically available to the AI assistant when connected. Th
 
 1. **Access Repository Content**: Read files and understand code structure
 2. **Analyze Code**: Use MCP tools for code analysis and architecture understanding
-3. **Generate Diagrams**: Create more accurate diagrams based on actual code content
-4. **Provide Context**: Use repository metadata and history for better responses
+3. **Generate Diagrams**: Create Mermaid diagrams based on repository analysis
 
-### Enhanced System Prompt
+---
 
-When MCP is connected, the AI system prompt includes:
+# 🔗 MCP Development Guidelines
 
-```
-You have access to repository tools through MCP. Use them to:
-- Analyze code structure and architecture
-- Read file contents for detailed understanding
-- Access commit history for code evolution
-- Generate accurate Mermaid diagrams based on actual code
-```
+## Understanding MCP
 
-## Error Handling
+The Model Context Protocol (MCP) enables AI models to interact with external systems. Sirelia integrates with GitHub Copilot's MCP server for repository access.
 
-The MCP integration includes comprehensive error handling:
+### Key Concepts
 
-- **Connection Errors**: Automatic retry and graceful degradation
-- **Tool Errors**: Individual tool error handling with fallbacks
-- **Protocol Errors**: MCP protocol-level error handling
-- **Network Errors**: Timeout and retry mechanisms
+- **Tools**: Executable functions exposed by MCP servers
+- **Resources**: Read-only data sources
+- **Client/Server**: MCP clients connect to MCP servers
 
-## Configuration Storage
+## Development Workflow for MCP Integration
 
-MCP configuration is stored in browser localStorage:
+### 1. Tool Discovery First
 
-- `sirelia-mcp-config`: MCP server configuration
-- Connection status and capabilities are cached
-- Automatic reconnection on page reload
-
-## Testing
-
-Use the test page at `/test-mcp` to:
-
-1. Verify MCP server connection
-2. Test available tools
-3. Debug connection issues
-4. Validate configuration
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Connection Failed**
-   - Verify MCP server URL is correct
-   - Check if server requires authentication
-   - Ensure server supports SSE transport
-
-2. **No Tools Available**
-   - Check server capabilities
-   - Verify authentication token
-   - Review server logs for errors
-
-3. **Tool Execution Errors**
-   - Check tool parameter requirements
-   - Verify repository access permissions
-   - Review MCP server logs
-
-### Debug Mode
-
-Enable debug logging by setting:
+**Always discover available tools before implementing functionality:**
 
 ```typescript
-localStorage.setItem('sirelia-debug', 'true');
+// Use the test page at /test-context
+// Click "Check Available Tools" to see what's available
+const availableTools = await repoService.getAvailableTools();
+console.log('Available tools:', availableTools);
 ```
 
-## Future Enhancements
+### 2. Handle Tool Name Differences
 
-- **Multi-Repository Support**: Connect to multiple repositories simultaneously
-- **Advanced Git Operations**: Branch management, merge analysis
-- **Code Analysis Tools**: AST parsing, dependency analysis
-- **Performance Optimization**: Caching and connection pooling
-- **Plugin System**: Custom MCP tool integration
+**GitHub Copilot uses different tool names than expected:**
+- ✅ `get_file_contents` (not `get_file_content`)
+- ✅ `list_branches`, `list_commits` for repository info
+- ✅ `search_code`, `search_repositories` for discovery
 
-## Security Considerations
+### 3. Test Response Formats
 
-- MCP tokens are stored locally in browser localStorage
-- Consider using environment variables for production
-- Implement proper authentication for multi-user environments
-- Review MCP server security policies
+**MCP responses can have various structures:**
+```typescript
+// Implement flexible parsing with fallbacks
+const content = response.content || 
+               response.data || 
+               response.text ||
+               response.body;
+```
 
-## Support
+## Best Practices
 
-For issues or questions:
-1. Check the troubleshooting section above
-2. Verify your MCP server configuration
-3. Test with the `/test-mcp` endpoint
-4. Review browser console for error messages
-5. Check MCP server logs for protocol errors 
+### 1. Tool Discovery
+```typescript
+// Always discover tools before using them
+const availableTools = await repoService.getAvailableTools();
+console.log('Available tools:', availableTools);
+```
+
+### 2. Error Handling
+```typescript
+try {
+  const result = await mcpClient.callTool('tool_name', args);
+  return result;
+} catch (error) {
+  console.error('Tool call failed:', error);
+  // Implement fallback or graceful degradation
+  return null;
+}
+```
+
+### 3. Response Parsing
+```typescript
+// Handle various response formats
+const content = response.content || 
+               response.data || 
+               response.text ||
+               response.body;
+```
+
+### 4. Connection Management
+```typescript
+// Check connection status before making calls
+if (!mcpClient.isConnected()) {
+  throw new Error('MCP client not connected');
+}
+```
+
+## Common MCP Tools
+
+### GitHub Copilot MCP Server (47 tools available)
+
+**Repository Operations:**
+- `get_file_contents` - Get file or directory contents
+- `list_branches` - List repository branches
+- `list_commits` - Get commit history
+- `get_commit` - Get commit details
+
+**Search Operations:**
+- `search_code` - Search for code across repositories
+- `search_repositories` - Search for GitHub repositories
+- `search_issues` - Search for issues
+
+**Repository Management:**
+- `create_repository` - Create new repository
+- `fork_repository` - Fork existing repository
+- `create_branch` - Create new branch
+
+**Issue & PR Management:**
+- `create_issue` - Create new issue
+- `get_issue` - Get issue details
+- `create_pull_request` - Create new pull request
+- `get_pull_request` - Get pull request details
+
+## MCP Configuration
+
+### Store MCP Configuration
+```typescript
+const mcpConfig = {
+  serverUrl: 'https://api.githubcopilot.com/mcp/',
+  isConnected: true,
+  isEnabled: true,
+  token: 'your-token-here'
+};
+
+localStorage.setItem('sirelia-mcp-config', JSON.stringify(mcpConfig));
+```
+
+### Retrieve MCP Configuration
+```typescript
+const getMCPConfig = (): MCPConfig | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const mcpConfigStr = localStorage.getItem('sirelia-mcp-config');
+    if (mcpConfigStr) {
+      return JSON.parse(mcpConfigStr);
+    }
+  } catch (error) {
+    console.error('Failed to parse MCP config:', error);
+  }
+  return null;
+};
+```
+
+## Testing MCP Integration
+
+### Test Page Usage
+Use the interactive test page at `/test-context`:
+- Test MCP connection
+- Validate tool discovery
+- Test context builder functionality
+
+### API Testing
+```bash
+# Test context builder API
+curl -X POST http://localhost:3000/api/test-context \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repositoryUrl": "https://github.com/user/repo",
+    "userRequest": "Generate architecture diagram",
+    "mcpConfig": {...}
+  }'
+```
+
+### Common Test Scenarios
+
+1. **MCP Connection**
+   - Test successful connection
+   - Test connection failures
+   - Test reconnection logic
+
+2. **Tool Discovery**
+   - Test tool listing
+   - Test tool availability
+   - Test tool calling
+
+3. **Context Building**
+   - Test repository parsing
+   - Test file structure analysis
+   - Test context assembly
+
+## Common Issues & Solutions
+
+### 1. MCP Tool Not Found
+
+**Problem**: `Tool 'tool_name' not found` error
+
+**Solution**: 
+1. Check available tools first
+2. Verify tool names match exactly
+3. Implement fallback mechanisms
+
+### 2. MCP Response Parsing
+
+**Problem**: Unexpected response format
+
+**Solution**: Implement flexible parsing
+```typescript
+const content = response.content || 
+               response.data || 
+               response.text ||
+               response.body;
+```
+
+### 3. Connection Issues
+
+**Problem**: MCP connection failures
+
+**Solution**:
+1. Check network connectivity
+2. Verify MCP server URL
+3. Check authentication tokens
+4. Implement retry logic
+
+### 4. SSR localStorage Error
+
+**Problem**: `localStorage is not defined` during server-side rendering
+
+**Solution**: Use client-side checks
+```typescript
+const getMCPConfig = (): MCPConfig | null => {
+  if (typeof window === 'undefined') return null;
+  // Access localStorage only on client side
+};
+```
+
+## Code Examples
+
+### GitHub MCP Client Usage
+```typescript
+import { GitHubMCPClient } from '@/services/mcp/github-mcp-client';
+
+const client = new GitHubMCPClient();
+
+// Connect to GitHub Copilot MCP server
+await client.connect({
+  serverUrl: 'https://api.githubcopilot.com/mcp/',
+  token: 'your-token'
+});
+
+// Get available tools
+const tools = await client.getTools();
+
+// Call a specific tool
+const result = await client.callTool('get_file_contents', {
+  owner: 'username',
+  repo: 'repository',
+  path: 'README.md'
+});
+```
+
+### Repository Service Integration
+```typescript
+import { RepositoryService } from '@/services/mcp/repository-service';
+
+const repoService = new RepositoryService();
+
+// Connect to GitHub MCP server
+await repoService.connectToGitHub({
+  serverUrl: 'https://api.githubcopilot.com/mcp/',
+  token: 'your-token'
+});
+
+// Get repository information
+const repoInfo = await repoService.getRepositoryInfo('username', 'repo');
+
+// Get file content
+const fileContent = await repoService.getFileContent('username', 'repo', 'src/App.tsx');
+
+// List files in directory
+const files = await repoService.listFiles('username', 'repo', 'src');
+```
+
+## Performance Considerations
+
+### 1. Connection Pooling
+- Reuse MCP connections when possible
+- Implement connection pooling for multiple requests
+- Close connections properly to free resources
+
+### 2. Caching
+- Cache tool discovery results
+- Cache frequently accessed file contents
+- Implement TTL-based cache invalidation
+
+### 3. Error Recovery
+- Implement exponential backoff for failed requests
+- Retry failed tool calls with different strategies
+- Graceful degradation when MCP is unavailable
+
+## Security Best Practices
+
+### 1. Token Management
+- Store tokens securely in localStorage
+- Implement token refresh mechanisms
+- Validate token permissions before use
+
+### 2. Input Validation
+- Validate all MCP tool parameters
+- Sanitize file paths and repository names
+- Implement rate limiting for tool calls
+
+### 3. Error Handling
+- Don't expose sensitive information in error messages
+- Log security-relevant errors appropriately
+- Implement proper error boundaries
+
+## Additional Resources
+
+- [MCP Documentation](https://modelcontextprotocol.io/)
+- [GitHub Copilot MCP Server](https://github.com/github/github-mcp-server)
+- [MCP Tools Guide](https://modelcontextprotocol.io/docs/concepts/tools)
+- [GitHub API Documentation](https://docs.github.com/en/rest) 

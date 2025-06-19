@@ -107,7 +107,6 @@ export class GitHubMCPClient {
     }
 
     const responseData = await response.json();
-    console.log('GitHub MCP: Received response:', responseData);
 
     if (responseData.error) {
       throw new Error(`MCP Error: ${responseData.error.message}`);
@@ -126,7 +125,9 @@ export class GitHubMCPClient {
         params: {}
       });
       
-      return result as MCPToolSet;
+      const tools = result as MCPToolSet;
+      
+      return tools;
     } catch (error) {
       console.error('GitHub MCP: Failed to get tools:', error);
       return {};
