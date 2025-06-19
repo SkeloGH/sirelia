@@ -27,6 +27,18 @@ Sirelia is an npm package that provides real-time Mermaid diagram generation and
 - **Chokidar**: File watching capabilities
 - **Static Export**: Pre-built web interface for immediate serving
 
+## 🤖 Sirelia as Your Coding Copilot for Visual Thinking
+
+Sirelia isn't just a diagram renderer—it's your visual copilot for software design, architecture, and documentation. Use Sirelia alongside your favorite AI coding assistants (like GitHub Copilot, Cursor, or ChatGPT) to:
+
+- **Instantly visualize architecture**: Paste or generate Mermaid diagrams from code, requirements, or AI suggestions and see them live.
+- **Collaborate visually**: Share `.sirelia.mdd` files in your repo for team-wide, always-up-to-date diagrams.
+- **Document as you code**: Keep architecture, flows, and data models in sync with your codebase, using Sirelia as a living documentation hub.
+- **AI + Diagrams**: Prompt your AI assistant to generate Mermaid code, drop it into `.sirelia.mdd`, and instantly see the result in your browser.
+- **Frictionless onboarding**: New team members can run `sirelia start` and immediately explore your system visually.
+
+**Sirelia bridges the gap between code, documentation, and visual thinking—making your AI copilot even more powerful.**
+
 ## Quick Start
 
 ### Installation
