@@ -414,9 +414,13 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
   };
 
   const exportAsPng = async () => {
-    if (!wrapperRef.current) return;
+    if (!containerRef.current) {
+      console.error('Container ref not available');
+      return;
+    }
     
-    const svgElement = wrapperRef.current.querySelector('svg');
+    // Try to find the SVG element in the container
+    const svgElement = containerRef.current.querySelector('svg') as SVGSVGElement;
     if (!svgElement) {
       console.error('No SVG element found for export');
       return;
@@ -431,27 +435,52 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
         return;
       }
 
-      // Get the actual SVG dimensions (not the transformed viewport)
-      const svgRect = svgElement.getBoundingClientRect();
-      const svgWidth = svgElement.viewBox?.baseVal?.width || svgRect.width;
-      const svgHeight = svgElement.viewBox?.baseVal?.height || svgRect.height;
+      // Get SVG dimensions - try multiple approaches
+      let svgWidth = 0;
+      let svgHeight = 0;
 
-      // Use fallback dimensions if SVG dimensions are falsy
-      const finalWidth = svgWidth || 800;
-      const finalHeight = svgHeight || 600;
-
-      if (!svgWidth || !svgHeight) {
-        console.warn('SVG has no dimensions, using fallback size');
+      // First try viewBox
+      if (svgElement.viewBox && svgElement.viewBox.baseVal) {
+        svgWidth = svgElement.viewBox.baseVal.width;
+        svgHeight = svgElement.viewBox.baseVal.height;
       }
 
-      // Use the final dimensions for high quality export
+      // If no viewBox, try width/height attributes
+      if (!svgWidth || !svgHeight) {
+        svgWidth = parseFloat(svgElement.getAttribute('width') || '0');
+        svgHeight = parseFloat(svgElement.getAttribute('height') || '0');
+      }
+
+      // If still no dimensions, try computed style
+      if (!svgWidth || !svgHeight) {
+        const rect = svgElement.getBoundingClientRect();
+        svgWidth = rect.width;
+        svgHeight = rect.height;
+      }
+
+      // Use fallback dimensions if still no valid dimensions
+      const finalWidth = svgWidth && svgWidth > 0 ? svgWidth : 800;
+      const finalHeight = svgHeight && svgHeight > 0 ? svgHeight : 600;
+
+      console.log('Export dimensions:', { finalWidth, finalHeight, originalWidth: svgWidth, originalHeight: svgHeight });
+
+      // Set canvas size for high quality export
       canvas.width = finalWidth * 2; // Higher resolution
       canvas.height = finalHeight * 2;
 
-      // Convert SVG to data URL with proper styling
-      const svgData = new XMLSerializer().serializeToString(svgElement);
+      // Clone the SVG to avoid modifying the original
+      const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
       
-      // Create a data URL with proper encoding
+      // Ensure the cloned SVG has proper dimensions
+      if (!clonedSvg.getAttribute('width')) {
+        clonedSvg.setAttribute('width', finalWidth.toString());
+      }
+      if (!clonedSvg.getAttribute('height')) {
+        clonedSvg.setAttribute('height', finalHeight.toString());
+      }
+
+      // Convert SVG to data URL
+      const svgData = new XMLSerializer().serializeToString(clonedSvg);
       const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
       const url = URL.createObjectURL(svgBlob);
 
@@ -468,7 +497,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
           // Scale for higher resolution
           ctx.scale(2, 2);
           
-          // Draw the image using the final dimensions
+          // Draw the image
           ctx.drawImage(imageElement, 0, 0, finalWidth, finalHeight);
           
           // Convert to PNG and download
@@ -482,6 +511,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
               a.click();
               document.body.removeChild(a);
               URL.revokeObjectURL(pngUrl);
+              console.log('PNG export successful');
             } else {
               console.error('Failed to create PNG blob');
             }
@@ -489,14 +519,13 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
         } catch (error) {
           console.error('Error drawing image to canvas:', error);
         } finally {
-          // Clean up the SVG URL after successful load and processing
+          // Clean up the SVG URL
           URL.revokeObjectURL(url);
         }
       };
       
-      imageElement.onerror = () => {
-        console.error('Failed to load SVG as image');
-        // Clean up the SVG URL on error
+      imageElement.onerror = (error) => {
+        console.error('Failed to load SVG as image:', error);
         URL.revokeObjectURL(url);
       };
       
