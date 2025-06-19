@@ -56,27 +56,72 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
       filteredCode.toLowerCase().startsWith(type.toLowerCase())
     );
 
-    // If we don't find a known type, let Mermaid handle the validation
-    // This allows for new diagram types and experimental features
+    // If we don't find a known type, check for specific Mermaid syntax patterns
     if (!hasValidType) {
-      // Check if it looks like a Mermaid diagram (has some basic structure)
       const lines = filteredCode.split('\n');
       const firstLine = lines[0].trim().toLowerCase();
       
-      // Allow if it starts with a word that could be a diagram type
-      // or if it has typical Mermaid syntax patterns
-      const looksLikeMermaid = 
+      // Check for specific Mermaid syntax patterns that indicate valid diagram content
+      const hasMermaidSyntax = 
         firstLine.length > 0 && 
         !firstLine.startsWith('//') && 
         !firstLine.startsWith('#') &&
-        (firstLine.includes('-->') || 
-         firstLine.includes('---') || 
-         firstLine.includes('[') ||
-         firstLine.includes('{') ||
-         firstLine.includes('(') ||
-         /^[a-zA-Z]/.test(firstLine));
+        (
+          // Flowchart/graph syntax
+          firstLine.includes('-->') || 
+          firstLine.includes('---') || 
+          firstLine.includes('->') ||
+          firstLine.includes('--') ||
+          // Node definitions
+          firstLine.includes('[') ||
+          firstLine.includes('{') ||
+          firstLine.includes('(') ||
+          // Subgraph syntax
+          firstLine.includes('subgraph') ||
+          firstLine.includes('%%') ||
+          // Sequence diagram syntax
+          firstLine.includes('participant') ||
+          firstLine.includes('actor') ||
+          firstLine.includes('note') ||
+          // Class diagram syntax
+          firstLine.includes('class') ||
+          firstLine.includes('interface') ||
+          // State diagram syntax
+          firstLine.includes('state') ||
+          // Gantt syntax
+          firstLine.includes('title') ||
+          firstLine.includes('dateformat') ||
+          firstLine.includes('section') ||
+          // Pie chart syntax
+          firstLine.includes('title') ||
+          firstLine.includes('pie') ||
+          // Git graph syntax
+          firstLine.includes('gitgraph') ||
+          // Mindmap syntax
+          firstLine.includes('mindmap') ||
+          // Timeline syntax
+          firstLine.includes('timeline') ||
+          // C4 syntax
+          firstLine.includes('person') ||
+          firstLine.includes('system') ||
+          firstLine.includes('container') ||
+          firstLine.includes('component') ||
+          // Journey syntax
+          firstLine.includes('title') ||
+          firstLine.includes('section') ||
+          // XY Chart syntax
+          firstLine.includes('xychart') ||
+          // Block diagram syntax
+          firstLine.includes('block') ||
+          // Packet diagram syntax
+          firstLine.includes('packet') ||
+          // Kanban syntax
+          firstLine.includes('kanban') ||
+          // Architecture syntax
+          firstLine.includes('architecture')
+        );
       
-      return looksLikeMermaid;
+      return hasMermaidSyntax;
     }
     
     return true;
