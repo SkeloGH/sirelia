@@ -44,6 +44,15 @@ Welcome to Sirelia! This guide will help you understand how to contribute to thi
    npm run dev
    ```
 
+5. **Test the package locally**
+   ```bash
+   npm run package:build
+   npm link
+   # In another directory
+   sirelia init
+   sirelia start
+   ```
+
 ## 🏗️ Project Architecture
 
 ### Core Components

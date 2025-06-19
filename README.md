@@ -10,6 +10,7 @@ Sirelia is an npm package that provides real-time Mermaid diagram generation and
 - **Web Interface**: Modern, intuitive interface for diagram editing
 - **CodeMirror Editor**: Advanced code editing with syntax highlighting
 - **Multiple Diagram Support**: Handle multiple diagrams in a single file
+- **Out-of-the-Box Experience**: Works immediately after global installation
 
 ### 🎨 User Interface
 - **Resizable Panels**: Flexible layout with collapsible and resizable panels
@@ -24,27 +25,36 @@ Sirelia is an npm package that provides real-time Mermaid diagram generation and
 - **Mermaid v11**: Diagram rendering engine
 - **WebSocket**: Real-time communication
 - **Chokidar**: File watching capabilities
+- **Static Export**: Pre-built web interface for immediate serving
+
+## 🤖 Sirelia as Your Coding Copilot for Visual Thinking
+
+Sirelia isn't just a diagram renderer—it's your visual copilot for software design, architecture, and documentation. Use Sirelia alongside your favorite AI coding assistants (like GitHub Copilot, Cursor, or ChatGPT) to:
+
+- **Instantly visualize architecture**: Paste or generate Mermaid diagrams from code, requirements, or AI suggestions and see them live.
+- **Collaborate visually**: Share `.sirelia.mdd` files in your repo for team-wide, always-up-to-date diagrams.
+- **Document as you code**: Keep architecture, flows, and data models in sync with your codebase, using Sirelia as a living documentation hub.
+- **AI + Diagrams**: Prompt your AI assistant to generate Mermaid code, drop it into `.sirelia.mdd`, and instantly see the result in your browser.
+- **Frictionless onboarding**: New team members can run `sirelia start` and immediately explore your system visually.
+
+**Sirelia bridges the gap between code, documentation, and visual thinking—making your AI copilot even more powerful.**
 
 ## Quick Start
 
 ### Installation
 
-Install Sirelia as a **dev dependency**:
+Install Sirelia **globally** for use in any project:
 
 ```bash
-npm install --save-dev sirelia
-```
-
-or with yarn:
-
-```bash
-yarn add --dev sirelia
+npm install -g sirelia
 ```
 
 ### Initialize in Your Project
 
+Navigate to your project directory and run:
+
 ```bash
-npx sirelia init
+sirelia init
 ```
 
 This will:
@@ -53,6 +63,12 @@ This will:
 - Add a `sirelia:start` script to your `package.json`
 
 ### Start Sirelia
+
+```bash
+sirelia start
+```
+
+Or use the npm script:
 
 ```bash
 npm run sirelia:start
@@ -110,19 +126,19 @@ Open http://localhost:3000 to see your diagrams rendered in real-time. The web i
 #### Custom Ports
 
 ```bash
-npx sirelia start --port 8080 --bridge-port 8081
+sirelia start --port 8080 --bridge-port 8081
 ```
 
 #### Watch Different File
 
 ```bash
-npx sirelia start --watch diagrams.md
+sirelia start --watch diagrams.md
 ```
 
 #### Force Reinitialize
 
 ```bash
-npx sirelia init --force
+sirelia init --force
 ```
 
 ## Supported Diagram Types
@@ -168,6 +184,24 @@ your-project/
 └── package.json         # Updated with sirelia:start script
 ```
 
+## Multi-Project Usage
+
+Since Sirelia is installed globally, you can use it in multiple projects:
+
+```bash
+# Project 1
+cd project1
+sirelia init
+sirelia start
+
+# Project 2 (in another terminal)
+cd project2
+sirelia init
+sirelia start
+```
+
+Each project will have its own `.sirelia.mdd` file and independent file watching.
+
 ## Development
 
 ### Building the Package
@@ -198,11 +232,6 @@ This project is licensed under the MIT License.
 
 - [x] File watcher for automatic updates
 - [x] Web interface for diagram editing
-- [x] Real-time WebSocket communication
-- [x] CLI commands for easy setup
-- [ ] AI-powered diagram generation
-- [ ] Repository integration
-- [ ] Export functionality (PNG, SVG, PDF)
-- [ ] Collaboration features
-- [ ] Custom themes and styling
-- [ ] Plugin system for diagram types
+- [x] Global npm package installation
+- [x] Out-of-the-box experience
+- [x] Multi-project support

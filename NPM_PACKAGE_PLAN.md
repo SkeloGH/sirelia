@@ -94,12 +94,12 @@ sirelia/
 
 ### 1. Installation
 ```bash
-npm install --save sirelia
+npm install -g sirelia
 ```
 
 ### 2. Initialization
 ```bash
-npx sirelia init
+sirelia init
 ```
 **Creates:**
 - `.sirelia.mdd` file with example diagrams
@@ -108,7 +108,7 @@ npx sirelia init
 
 ### 3. Usage
 ```bash
-npm run sirelia:start
+sirelia start
 ```
 **Starts:**
 - Web server on http://localhost:3000
@@ -120,6 +120,19 @@ npm run sirelia:start
 2. Save file to trigger automatic update
 3. View real-time changes in web interface
 4. Use web interface for advanced editing
+
+### 5. Multi-Project Support
+```bash
+# Project 1
+cd project1
+sirelia init
+sirelia start
+
+# Project 2 (in another terminal)
+cd project2
+sirelia init
+sirelia start
+```
 
 ## Technical Implementation Details
 
@@ -152,7 +165,7 @@ npm run sirelia:start
 - `bin/`: CLI executable
 - `lib/`: Compiled JavaScript modules
 - `templates/`: Template files
-- `dist/`: Built Next.js application
+- `out/`: Built Next.js static files
 
 ### Dependencies
 - **Production**: `commander`, `chokidar`, `ws`, `next`, `react`, etc.
@@ -227,4 +240,4 @@ npm run sirelia:start
 
 ## Conclusion
 
-This plan transforms Sirelia from a standalone Next.js application into a powerful, distributable npm package that provides a seamless developer experience for Mermaid diagram generation and visualization. The implementation focuses on ease of use, real-time updates, and extensibility for future enhancements. 
+This plan transforms Sirelia from a standalone Next.js application into a powerful, distributable npm package that provides a seamless developer experience for Mermaid diagram generation and visualization. The implementation focuses on ease of use, real-time updates, and extensibility for future enhancements.
