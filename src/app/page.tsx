@@ -103,10 +103,10 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Sirelia - Mermaid Bridge
+                  Sirelia
                   <span className={`inline-block ml-1 w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
                 </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Real-time Mermaid diagram rendering from Cursor IDE with code editing</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Real-time Mermaid diagram visualization with live editing</p>
               </div>
               <div className="flex items-center space-x-2">
                 {validationError && !showEditor && (

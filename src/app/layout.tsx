@@ -7,8 +7,8 @@ import { ThemeProvider } from "../components/ThemeProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Sirelia - Real-time Mermaid Bridge",
-  description: "Real-time Mermaid diagram rendering bridge for instant diagram visualization",
+  title: "Sirelia - Real-time Mermaid Visualization",
+  description: "Real-time Mermaid diagram visualization with live editing and export capabilities",
 };
 
 export default function RootLayout({
