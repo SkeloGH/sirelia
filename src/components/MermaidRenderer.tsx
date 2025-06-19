@@ -18,6 +18,121 @@ interface MermaidRendererProps {
   className?: string;
 }
 
+interface ToolbarProps {
+  scale: number;
+  navigationMode: 'drag' | 'select';
+  isDisabled?: boolean;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetView: () => void;
+  onToggleNavigationMode: () => void;
+  onExportMmd: () => void;
+  onExportGv: () => void;
+  onExportPng: () => void;
+}
+
+const Toolbar: React.FC<ToolbarProps> = ({
+  scale,
+  navigationMode,
+  isDisabled = false,
+  onZoomIn,
+  onZoomOut,
+  onResetView,
+  onToggleNavigationMode,
+  onExportMmd,
+  onExportGv,
+  onExportPng
+}) => {
+  const buttonClass = isDisabled 
+    ? "p-1.5 text-gray-400 cursor-not-allowed" 
+    : "p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors";
+
+  const navigationButtonClass = isDisabled
+    ? "p-1.5 text-gray-400 cursor-not-allowed"
+    : navigationMode === 'drag'
+      ? "p-1.5 text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900 rounded transition-colors"
+      : "p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors";
+
+  return (
+    <div className={`flex-shrink-0 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 ${isDisabled ? 'opacity-50' : ''}`}>
+      <div className="flex items-center space-x-1">
+        <button
+          disabled={isDisabled}
+          onClick={onZoomIn}
+          className={buttonClass}
+          title="Zoom In"
+        >
+          <ZoomIn className="w-4 h-4" />
+        </button>
+        <button
+          disabled={isDisabled}
+          onClick={onZoomOut}
+          className={buttonClass}
+          title="Zoom Out"
+        >
+          <ZoomOut className="w-4 h-4" />
+        </button>
+        <button
+          disabled={isDisabled}
+          onClick={onResetView}
+          className={buttonClass}
+          title="Reset View"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
+        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+          {Math.round(scale * 100)}%
+        </span>
+      </div>
+      
+      <div className="flex items-center space-x-1">
+        <button
+          disabled={isDisabled}
+          onClick={onToggleNavigationMode}
+          className={navigationButtonClass}
+          title={navigationMode === 'drag' ? 'Drag Mode (Active)' : 'Select Mode (Active)'}
+        >
+          {navigationMode === 'drag' ? (
+            <Move className="w-4 h-4" />
+          ) : (
+            <MousePointer className="w-4 h-4" />
+          )}
+        </button>
+        <span className="text-xs text-gray-500 dark:text-gray-400 mx-2">
+          {navigationMode === 'drag' ? 'Drag' : 'Select'}
+        </span>
+      </div>
+      
+      <div className="flex items-center space-x-1">
+        <button
+          disabled={isDisabled}
+          onClick={onExportMmd}
+          className={buttonClass}
+          title="Export as .mmd"
+        >
+          <FileText className="w-4 h-4" />
+        </button>
+        <button
+          disabled={isDisabled}
+          onClick={onExportGv}
+          className={buttonClass}
+          title="Export as .gv"
+        >
+          <GitBranch className="w-4 h-4" />
+        </button>
+        <button
+          disabled={isDisabled}
+          onClick={onExportPng}
+          className={buttonClass}
+          title="Export as .png"
+        >
+          <Image className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function MermaidRenderer({ code, className = '' }: MermaidRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -536,250 +651,77 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
     }
   };
 
-  // Early return for error state - prevent any rendering
-  if (error) {
-    return (
-      <div className={`flex flex-col h-full ${className}`}>
-        {/* Toolbar - disabled when there's an error */}
-        <div className="flex-shrink-0 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 opacity-50">
-          <div className="flex items-center space-x-1">
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom In">
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom Out">
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Reset View">
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <span className="text-xs text-gray-400 ml-2">100%</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Navigation Mode">
-              <Move className="w-4 h-4" />
-            </button>
-            <span className="text-xs text-gray-400 mx-2">Drag</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .mmd">
-              <FileText className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .gv">
-              <GitBranch className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .png">
-              <Image className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        
-        {/* Error Display */}
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center max-w-md">
-            <div className="text-red-500 dark:text-red-400 text-lg font-medium mb-2">Rendering Error</div>
-            <div className="text-gray-600 dark:text-gray-400 text-sm">{error}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Determine the current state
+  const isDisabled = Boolean(error || isRendering || !svgContent);
+  const showContent = !error && !isRendering && svgContent;
 
-  // Early return for loading state - prevent any rendering
-  if (isRendering) {
-    return (
-      <div className={`flex flex-col h-full ${className}`}>
-        {/* Toolbar - disabled when rendering */}
-        <div className="flex-shrink-0 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 opacity-50">
-          <div className="flex items-center space-x-1">
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom In">
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom Out">
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Reset View">
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <span className="text-xs text-gray-400 ml-2">100%</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Navigation Mode">
-              <Move className="w-4 h-4" />
-            </button>
-            <span className="text-xs text-gray-400 mx-2">Drag</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .mmd">
-              <FileText className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .gv">
-              <GitBranch className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .png">
-              <Image className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        
-        {/* Loading Display */}
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-gray-500 dark:text-gray-400 text-sm">Rendering...</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Early return for empty state - prevent any rendering
-  if (!svgContent) {
-    return (
-      <div className={`flex flex-col h-full ${className}`}>
-        {/* Toolbar - disabled when no content */}
-        <div className="flex-shrink-0 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 opacity-50">
-          <div className="flex items-center space-x-1">
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom In">
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Zoom Out">
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Reset View">
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <span className="text-xs text-gray-400 ml-2">100%</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Navigation Mode">
-              <Move className="w-4 h-4" />
-            </button>
-            <span className="text-xs text-gray-400 mx-2">Drag</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .mmd">
-              <FileText className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .gv">
-              <GitBranch className="w-4 h-4" />
-            </button>
-            <button disabled className="p-1.5 text-gray-400 cursor-not-allowed" title="Export as .png">
-              <Image className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        
-        {/* Empty State */}
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-gray-400 dark:text-gray-500 text-sm">No diagram to display</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Only render the diagram if we have valid SVG content
   return (
     <div className={`flex flex-col h-full ${className}`}>
-      {/* Toolbar */}
-      <div className="flex-shrink-0 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={zoomIn}
-            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="Zoom In"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button
-            onClick={zoomOut}
-            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="Zoom Out"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <button
-            onClick={resetView}
-            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="Reset View"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-            {Math.round(scale * 100)}%
-          </span>
-        </div>
-        
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={toggleNavigationMode}
-            className={`p-1.5 rounded transition-colors ${
-              navigationMode === 'drag'
-                ? 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-            title={navigationMode === 'drag' ? 'Drag Mode (Active)' : 'Select Mode (Active)'}
-          >
-            {navigationMode === 'drag' ? (
-              <Move className="w-4 h-4" />
-            ) : (
-              <MousePointer className="w-4 h-4" />
-            )}
-          </button>
-          <span className="text-xs text-gray-500 dark:text-gray-400 mx-2">
-            {navigationMode === 'drag' ? 'Drag' : 'Select'}
-          </span>
-        </div>
-        
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={exportAsMmd}
-            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="Export as .mmd"
-          >
-            <FileText className="w-4 h-4" />
-          </button>
-          <button
-            onClick={exportAsGv}
-            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="Export as .gv"
-          >
-            <GitBranch className="w-4 h-4" />
-          </button>
-          <button
-            onClick={exportAsPng}
-            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="Export as .png"
-          >
-            <Image className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <Toolbar
+        scale={scale}
+        navigationMode={navigationMode}
+        isDisabled={isDisabled}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onResetView={resetView}
+        onToggleNavigationMode={toggleNavigationMode}
+        onExportMmd={exportAsMmd}
+        onExportGv={exportAsGv}
+        onExportPng={exportAsPng}
+      />
       
-      {/* Diagram Container */}
-      <div 
-        className="flex-1 relative overflow-hidden"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
-        style={{ 
-          cursor: navigationMode === 'drag' ? (isDragging ? 'grabbing' : 'grab') : 'default'
-        }}
-      >
-        <div 
-          ref={wrapperRef}
-          className="absolute inset-0 flex items-center justify-center"
-          style={{
-            transform: `translate(${svgTransform.x}px, ${svgTransform.y}px) scale(${scale})`,
-            transformOrigin: '50% 50%',
-            transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-            filter: selectedNode ? 'brightness(0.7)' : 'none',
-          }}
-        >
+      <div className="flex-1 relative overflow-hidden">
+        {error && (
+          <div className="flex items-center justify-center p-4 h-full">
+            <div className="text-center max-w-md">
+              <div className="text-red-500 dark:text-red-400 text-lg font-medium mb-2">Rendering Error</div>
+              <div className="text-gray-600 dark:text-gray-400 text-sm">{error}</div>
+            </div>
+          </div>
+        )}
+        
+        {isRendering && (
+          <div className="flex items-center justify-center p-4 h-full">
+            <div className="text-gray-500 dark:text-gray-400 text-sm">Rendering...</div>
+          </div>
+        )}
+        
+        {!svgContent && !error && !isRendering && (
+          <div className="flex items-center justify-center p-4 h-full">
+            <div className="text-gray-400 dark:text-gray-500 text-sm">No diagram to display</div>
+          </div>
+        )}
+        
+        {showContent && (
           <div 
-            ref={containerRef}
-            className="w-full h-full flex items-center justify-center"
-            dangerouslySetInnerHTML={{ __html: svgContent }}
-          />
-        </div>
+            className="absolute inset-0"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onWheel={handleWheel}
+            style={{ 
+              cursor: navigationMode === 'drag' ? (isDragging ? 'grabbing' : 'grab') : 'default'
+            }}
+          >
+            <div 
+              ref={wrapperRef}
+              className="absolute inset-0 flex items-center justify-center"
+              style={{
+                transform: `translate(${svgTransform.x}px, ${svgTransform.y}px) scale(${scale})`,
+                transformOrigin: '50% 50%',
+                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+                filter: selectedNode ? 'brightness(0.7)' : 'none',
+              }}
+            >
+              <div 
+                ref={containerRef}
+                className="w-full h-full flex items-center justify-center"
+                dangerouslySetInnerHTML={{ __html: svgContent }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
