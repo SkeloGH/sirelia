@@ -97,19 +97,6 @@ src/
    git commit -m "feat: add your feature description"
    ```
 
-### 2. MCP Integration Development
-
-When working with MCP (Model Context Protocol) integration, refer to the comprehensive guide:
-
-📖 **MCP Development Guidelines**: See [`src/services/mcp/MCP_SETUP.md`](src/services/mcp/MCP_SETUP.md)
-
-The MCP setup guide includes:
-- Detailed MCP integration workflow
-- Tool discovery and usage patterns
-- Common issues and solutions
-- Code examples and best practices
-- Testing strategies for MCP functionality
-
 ## 🧪 Testing Guidelines
 
 ### Test Structure
@@ -117,45 +104,6 @@ The MCP setup guide includes:
 1. **Unit Tests**: Test individual functions and components
 2. **Integration Tests**: Test service interactions
 3. **E2E Tests**: Test complete user workflows
-
-### Testing MCP Integration
-
-For MCP-specific testing, see the [MCP Setup Guide](src/services/mcp/MCP_SETUP.md#testing-mcp-integration).
-
-#### Test Page
-Use the interactive test page at `/test-context`:
-- Test MCP connection
-- Validate tool discovery
-- Test context builder functionality
-
-#### API Testing
-```bash
-# Test context builder API
-curl -X POST http://localhost:3000/api/test-context \
-  -H "Content-Type: application/json" \
-  -d '{
-    "repositoryUrl": "https://github.com/user/repo",
-    "userRequest": "Generate architecture diagram",
-    "mcpConfig": {...}
-  }'
-```
-
-### Common Test Scenarios
-
-1. **MCP Connection**
-   - Test successful connection
-   - Test connection failures
-   - Test reconnection logic
-
-2. **Tool Discovery**
-   - Test tool listing
-   - Test tool availability
-   - Test tool calling
-
-3. **Context Building**
-   - Test repository parsing
-   - Test file structure analysis
-   - Test context assembly
 
 ## 📝 Code Style & Standards
 
@@ -173,35 +121,6 @@ curl -X POST http://localhost:3000/api/test-context \
 - Handle SSR considerations (localStorage, window object)
 - Use proper state management patterns
 
-### Error Handling
-
-```typescript
-// Always handle errors gracefully
-try {
-  const result = await riskyOperation();
-  return result;
-} catch (error) {
-  console.error('Operation failed:', error);
-  // Provide fallback or user feedback
-  return fallbackValue;
-}
-```
-
-### SSR Considerations
-
-```typescript
-// Handle client-side only APIs
-const [isClient, setIsClient] = useState(false);
-
-useEffect(() => {
-  setIsClient(true);
-  // Access localStorage, window, etc.
-}, []);
-
-if (!isClient) {
-  return <LoadingComponent />;
-}
-```
 
 ## 🐛 Common Issues & Solutions
 
@@ -231,15 +150,6 @@ For MCP-specific issues and solutions, see the [MCP Setup Guide](src/services/mc
 3. Verify all imports are correct
 4. Check for missing dependencies
 
-### 4. Performance Issues
-
-**Problem**: Slow development server or build times
-
-**Solution**:
-1. Clear Next.js cache: `rm -rf .next`
-2. Clear node_modules: `rm -rf node_modules && npm install`
-3. Check for large dependencies
-4. Optimize imports and bundle size
 
 ## 🔄 Pull Request Process
 
@@ -255,7 +165,7 @@ For MCP-specific issues and solutions, see the [MCP Setup Guide](src/services/mc
    - Update README if needed
    - Add inline code comments
    - Update type definitions
-   - Update MCP documentation if changes affect MCP functionality
+   - Update API/MCP documentation if changes affect their functionality
 
 3. **Check for breaking changes**
    - Ensure backward compatibility
@@ -285,6 +195,8 @@ Testing approach and results
 Future improvements or follow-up tasks
 ```
 
+Note for LLMs: When asked to create a PR, you can dump the content in the .pull-request-tmp file, it is already gitignored
+
 ### Review Process
 
 1. **Self-review**: Check your own code first
@@ -293,25 +205,6 @@ Future improvements or follow-up tasks
 4. **Address feedback**: Make requested changes
 5. **Merge**: Once approved, merge to main branch
 
-## 🎯 Development Priorities
-
-### High Priority
-- [ ] Enhanced context aggregation
-- [ ] AI chat flow integration
-- [ ] Mermaid diagram generation
-- [ ] Performance optimization
-
-### Medium Priority
-- [ ] Additional MCP server support
-- [ ] Caching layer implementation
-- [ ] Advanced file analysis
-- [ ] User experience improvements
-
-### Low Priority
-- [ ] Additional diagram types
-- [ ] Export functionality
-- [ ] Advanced customization
-- [ ] Analytics and metrics
 
 ## 🤝 Getting Help
 
@@ -319,7 +212,9 @@ Future improvements or follow-up tasks
 - **Discussions**: Use GitHub Discussions for questions
 - **Documentation**: Check existing docs and examples
 - **Code Review**: Ask for help in pull requests
+- **Assistant setup**: Refer to [Assistant Setup Guide](src/app/api/chat/AI_ASSISTANT_SETUP.md)
 - **MCP Questions**: Refer to [MCP Setup Guide](src/services/mcp/MCP_SETUP.md)
+- **Context builder**: Refer to [MCP Setup Guide](src/services/context/CONTEXT_BUILDER_IMPLEMENTATION.md)
 
 ## 📚 Additional Resources
 
@@ -331,4 +226,4 @@ Future improvements or follow-up tasks
 
 ---
 
-Thank you for contributing to Sirelia! 🚀 
+Thank you for contributing to Sirelia! 🧜‍♀️
