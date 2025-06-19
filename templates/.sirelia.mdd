@@ -1,42 +1,176 @@
-# Sirelia Diagram
+# Sirelia - Real-time Mermaid Diagram Generation
 
 This file contains your Mermaid diagrams. Edit this file and save to see real-time updates in the Sirelia web interface.
 
-## Example Diagram
+## 🏗️ Sirelia Architecture
+
+```mermaid
+graph TB
+    subgraph "User Workflow"
+        A[User edits .sirelia.mdd] --> B[File Watcher detects changes]
+        B --> C[Extract Mermaid code blocks]
+        C --> D[Send to Bridge Server]
+        D --> E[Bridge Server broadcasts to Web Clients]
+        E --> F[Web Interface updates in real-time]
+    end
+    
+    subgraph "Sirelia Components"
+        G[CLI Commands<br/>sirelia init/start] --> H[File Watcher<br/>chokidar]
+        H --> I[Bridge Server<br/>WebSocket + HTTP]
+        I --> J[Web Server<br/>Static file server]
+        J --> K[Web Interface<br/>Next.js + React]
+    end
+    
+    subgraph "External Tools"
+        L[Text Editor<br/>VS Code, Vim, etc.] --> A
+        M[Browser<br/>Chrome, Firefox, etc.] --> K
+    end
+    
+    subgraph "File System"
+        N[.sirelia.mdd<br/>Markdown with Mermaid] --> H
+        O[out/<br/>Static web files] --> J
+    end
+    
+    style A fill:#e1f5fe
+    style F fill:#e8f5e8
+    style G fill:#fff3e0
+    style L fill:#f3e5f5
+    style M fill:#f3e5f5
+```
+
+## 🔄 Real-time Data Flow
+
+```mermaid
+sequenceDiagram
+    participant User as 👤 User
+    participant File as 📄 .sirelia.mdd
+    participant Watcher as 👀 File Watcher
+    participant Bridge as 🔗 Bridge Server
+    participant Web as 🌐 Web Interface
+    
+    User->>File: Edit and save
+    File->>Watcher: File changed event
+    Watcher->>Watcher: Extract Mermaid blocks
+    Watcher->>Bridge: HTTP POST /mermaid
+    Bridge->>Web: WebSocket broadcast
+    Web->>User: Real-time diagram update
+    
+    Note over User,Web: Instant feedback loop
+```
+
+## 🎯 Component Architecture
+
+```mermaid
+classDiagram
+    class SireliaCLI {
+        +init()
+        +start()
+    }
+    
+    class FileWatcher {
+        +watch(filePath)
+        +extractMermaidCode(content)
+        +sendToBridge(code)
+    }
+    
+    class BridgeServer {
+        +start(port)
+        +handleHTTPRequest()
+        +broadcastToClients()
+    }
+    
+    class WebServer {
+        +serveStaticFiles()
+        +handleSPARouting()
+    }
+    
+    class WebInterface {
+        +renderDiagram(code)
+        +editCode()
+        +realTimeUpdates()
+    }
+    
+    SireliaCLI --> FileWatcher
+    SireliaCLI --> BridgeServer
+    SireliaCLI --> WebServer
+    FileWatcher --> BridgeServer
+    BridgeServer --> WebInterface
+    WebServer --> WebInterface
+```
+
+## 🚀 Quick Start Example
+
+```mermaid
+graph LR
+    A[Install: npm install -g sirelia] --> B[Init: sirelia init]
+    B --> C[Start: sirelia start]
+    C --> D[Edit: .sirelia.mdd]
+    D --> E[View: http://localhost:3000]
+    E --> F[Real-time updates!]
+    
+    style A fill:#e3f2fd
+    style B fill:#e8f5e8
+    style C fill:#fff3e0
+    style D fill:#fce4ec
+    style E fill:#f3e5f5
+    style F fill:#e0f2f1
+```
+
+## 📊 Multi-Project Usage
 
 ```mermaid
 graph TD
-    A[Start] --> B{Decision?}
-    B -->|Yes| C[Do Something]
-    B -->|No| D[Do Nothing]
-    C --> E[End]
-    D --> E
+    subgraph "Project A"
+        A1[project-a/.sirelia.mdd] --> A2[File Watcher A]
+        A2 --> A3[Bridge Server A<br/>Port 3001]
+        A3 --> A4[Web Interface A<br/>Port 3000]
+    end
+    
+    subgraph "Project B"
+        B1[project-b/.sirelia.mdd] --> B2[File Watcher B]
+        B2 --> B3[Bridge Server B<br/>Port 3003]
+        B3 --> B4[Web Interface B<br/>Port 3002]
+    end
+    
+    subgraph "Global Installation"
+        G1[sirelia CLI] --> A2
+        G1 --> B2
+    end
+    
+    style A1 fill:#e1f5fe
+    style B1 fill:#f3e5f5
+    style G1 fill:#fff3e0
 ```
 
-## Usage
+## 🎨 Supported Diagram Types
 
-1. Edit this file with your Mermaid diagrams
-2. Save the file to see real-time updates
-3. Open http://localhost:3000 to view the web interface
-4. Use the web interface to edit and refine your diagrams
+- **Flowcharts**: `graph TD`, `flowchart LR`
+- **Sequence Diagrams**: `sequenceDiagram`
+- **Class Diagrams**: `classDiagram`
+- **State Diagrams**: `stateDiagram-v2`
+- **Entity Relationship**: `erDiagram`
+- **User Journey**: `journey`
+- **Gantt Charts**: `gantt`
+- **Pie Charts**: `pie`
+- **Git Graphs**: `gitgraph`
+- **Mind Maps**: `mindmap`
+- **Timeline**: `timeline`
 
-## Supported Diagram Types
+## 💡 Usage Tips
 
-- Flowcharts: `graph TD`, `flowchart LR`
-- Sequence Diagrams: `sequenceDiagram`
-- Class Diagrams: `classDiagram`
-- State Diagrams: `stateDiagram-v2`
-- Entity Relationship: `erDiagram`
-- User Journey: `journey`
-- Gantt Charts: `gantt`
-- Pie Charts: `pie`
-- Git Graphs: `gitgraph`
-- Mind Maps: `mindmap`
-- Timeline: `timeline`
+1. **Edit this file** with your Mermaid diagrams
+2. **Save the file** to see real-time updates
+3. **Open http://localhost:3000** to view the web interface
+4. **Use the web interface** to edit and refine your diagrams
+5. **Multiple diagrams** can be in one file
+6. **Markdown code blocks** with `mermaid` language identifier
+7. **Automatic detection** of diagrams and real-time updates
 
-## Tips
+## 🔧 Technical Details
 
-- Use markdown code blocks with `mermaid` language identifier
-- You can have multiple diagrams in one file
-- Diagrams are automatically detected and sent to the web interface
-- The web interface provides real-time editing capabilities 
+- **File Watcher**: Uses chokidar for cross-platform file monitoring
+- **Bridge Server**: WebSocket + HTTP server for real-time communication
+- **Web Server**: Lightweight static file server for the Next.js app
+- **Web Interface**: React-based with CodeMirror editor and Mermaid renderer
+- **Global Installation**: Works in any project directory
+- **Out-of-the-Box**: No build steps required for users 
