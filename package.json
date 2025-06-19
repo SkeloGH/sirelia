@@ -1,7 +1,7 @@
 {
   "name": "sirelia",
   "version": "0.1.0",
-  "description": "AI-powered Mermaid diagram generation and real-time visualization tool",
+  "description": "Real-time Mermaid diagram generation and visualization tool with file watching",
   "main": "lib/index.js",
   "bin": {
     "sirelia": "./bin/sirelia.js"
@@ -26,8 +26,8 @@
     "mermaid",
     "diagrams",
     "visualization",
-    "ai",
-    "code-generation",
+    "real-time",
+    "file-watcher",
     "architecture",
     "flowcharts",
     "sequence-diagrams"

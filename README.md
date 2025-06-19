@@ -1,4 +1,4 @@
-# Sirelia - AI-Powered Mermaid Diagram Generation
+# Sirelia - Real-time Mermaid Diagram Generation
 
 Sirelia is an npm package that provides real-time Mermaid diagram generation and visualization. It includes a web interface for editing diagrams and a file watcher that automatically updates diagrams when you save your `.sirelia.mdd` file.
 
@@ -29,8 +29,16 @@ Sirelia is an npm package that provides real-time Mermaid diagram generation and
 
 ### Installation
 
+Install Sirelia as a **dev dependency**:
+
 ```bash
-npm install --save sirelia
+npm install --save-dev sirelia
+```
+
+or with yarn:
+
+```bash
+yarn add --dev sirelia
 ```
 
 ### Initialize in Your Project
