@@ -13,10 +13,12 @@ Sirelia is an npm package that provides real-time Mermaid diagram generation and
 - **Out-of-the-Box Experience**: Works immediately after global installation
 
 ### 🎨 User Interface
-- **Resizable Panels**: Flexible layout with collapsible and resizable panels
+- **Toggle Editor/Viewer**: Switch between code editing and diagram viewing
 - **Modern Design**: Clean, responsive interface built with Tailwind CSS
 - **Real-time Updates**: See changes instantly as you edit
 - **Theme Support**: Light and dark mode support
+- **Diagram Controls**: Zoom, pan, and navigation controls
+- **Export Options**: Export diagrams as PNG, MMD, or Graphviz formats
 
 ### 🔧 Technical Stack
 - **Next.js 15**: App Router with TypeScript
@@ -119,7 +121,9 @@ Open http://localhost:3000 to see your diagrams rendered in real-time. The web i
 
 - **Diagram Viewer**: See your diagrams with zoom, pan, and export options
 - **Code Editor**: Edit Mermaid syntax with full IDE features
+- **Toggle Controls**: Switch between editor and viewer modes
 - **Real-time Updates**: Changes appear instantly as you save your file
+- **Export Tools**: Download diagrams as PNG, MMD, or Graphviz formats
 
 ### 3. Advanced Usage
 
