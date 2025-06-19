@@ -3,6 +3,21 @@
 import { useState, useEffect } from 'react';
 import { MCPConfig } from '../../types/ai';
 
+// Move getMCPConfig outside component to avoid SSR issues
+const getMCPConfig = (): MCPConfig | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const mcpConfigStr = localStorage.getItem('sirelia-mcp-config');
+    if (mcpConfigStr) {
+      return JSON.parse(mcpConfigStr);
+    }
+  } catch (error) {
+    console.error('Failed to parse MCP config:', error);
+  }
+  return null;
+};
+
 export default function TestContextPage() {
   const [testResult, setTestResult] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -11,18 +26,6 @@ export default function TestContextPage() {
 
   useEffect(() => {
     setIsClient(true);
-    const getMCPConfig = (): MCPConfig | null => {
-      try {
-        const mcpConfigStr = localStorage.getItem('sirelia-mcp-config');
-        if (mcpConfigStr) {
-          return JSON.parse(mcpConfigStr);
-        }
-      } catch (error) {
-        console.error('Failed to parse MCP config:', error);
-      }
-      return null;
-    };
-
     setMcpConfig(getMCPConfig());
   }, []);
 
