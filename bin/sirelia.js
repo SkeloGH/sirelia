@@ -1,15 +1,24 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { init } from '../lib/cli/init.js';
 import { start } from '../lib/cli/start.js';
+
+// Get the version from package.json
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJsonPath = join(__dirname, '..', 'package.json');
+const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 
 const program = new Command();
 
 program
   .name('sirelia')
   .description('AI-powered Mermaid diagram generation and real-time visualization tool')
-  .version('0.1.0');
+  .version(packageJson.version);
 
 program
   .command('init')
