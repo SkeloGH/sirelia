@@ -414,52 +414,94 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
   };
 
   const exportAsPng = async () => {
-    if (!containerRef.current) return;
+    if (!wrapperRef.current) return;
     
-    const svgElement = containerRef.current.querySelector('svg');
-    if (!svgElement) return;
+    const svgElement = wrapperRef.current.querySelector('svg');
+    if (!svgElement) {
+      console.error('No SVG element found for export');
+      return;
+    }
 
     try {
       // Create a canvas to render the SVG
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Get SVG dimensions with proper null checks
-      const svgRect = svgElement.getBoundingClientRect();
-      if (!svgRect || svgRect.width === 0 || svgRect.height === 0) {
-        console.warn('SVG has no dimensions, using fallback size');
-        canvas.width = 800; // Fallback width
-        canvas.height = 600; // Fallback height
-      } else {
-        canvas.width = svgRect.width * 2; // Higher resolution
-        canvas.height = svgRect.height * 2;
+      if (!ctx) {
+        console.error('Failed to get canvas context');
+        return;
       }
 
-      // Convert SVG to data URL
+      // Get the actual SVG dimensions (not the transformed viewport)
+      const svgRect = svgElement.getBoundingClientRect();
+      const svgWidth = svgElement.viewBox?.baseVal?.width || svgRect.width;
+      const svgHeight = svgElement.viewBox?.baseVal?.height || svgRect.height;
+
+      // Use fallback dimensions if SVG dimensions are falsy
+      const finalWidth = svgWidth || 800;
+      const finalHeight = svgHeight || 600;
+
+      if (!svgWidth || !svgHeight) {
+        console.warn('SVG has no dimensions, using fallback size');
+      }
+
+      // Use the final dimensions for high quality export
+      canvas.width = finalWidth * 2; // Higher resolution
+      canvas.height = finalHeight * 2;
+
+      // Convert SVG to data URL with proper styling
       const svgData = new XMLSerializer().serializeToString(svgElement);
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml' });
+      
+      // Create a data URL with proper encoding
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
       const url = URL.createObjectURL(svgBlob);
 
       // Create image and draw to canvas
-      const img = new window.Image();
-      img.onload = () => {
-        ctx.scale(2, 2); // Scale for higher resolution
-        ctx.drawImage(img, 0, 0);
-        
-        // Convert to PNG and download
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const pngUrl = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = pngUrl;
-            a.download = 'diagram.png';
-            a.click();
-            URL.revokeObjectURL(pngUrl);
-          }
-        }, 'image/png');
+      const imageElement = new window.Image();
+      imageElement.crossOrigin = 'anonymous';
+      
+      imageElement.onload = () => {
+        try {
+          // Clear canvas and set white background
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Scale for higher resolution
+          ctx.scale(2, 2);
+          
+          // Draw the image using the final dimensions
+          ctx.drawImage(imageElement, 0, 0, finalWidth, finalHeight);
+          
+          // Convert to PNG and download
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const pngUrl = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = pngUrl;
+              a.download = 'sirelia-diagram.png';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(pngUrl);
+            } else {
+              console.error('Failed to create PNG blob');
+            }
+          }, 'image/png', 0.95);
+        } catch (error) {
+          console.error('Error drawing image to canvas:', error);
+        } finally {
+          // Clean up the SVG URL after successful load and processing
+          URL.revokeObjectURL(url);
+        }
       };
-      img.src = url;
+      
+      imageElement.onerror = () => {
+        console.error('Failed to load SVG as image');
+        // Clean up the SVG URL on error
+        URL.revokeObjectURL(url);
+      };
+      
+      imageElement.src = url;
+      
     } catch (error) {
       console.error('Failed to export as PNG:', error);
     }
