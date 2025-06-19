@@ -5,6 +5,7 @@ import { Code, Eye } from 'lucide-react';
 import CodeMirrorEditor from '../components/CodeMirrorEditor';
 import MermaidRenderer from '../components/MermaidRenderer';
 import ErrorBoundary from '../components/ErrorBoundary';
+import ThemeSwitch from '../components/ThemeSwitch';
 import { MermaidBridgeClient } from '../services/mcp/mermaid-bridge-client';
 
 export default function Home() {
@@ -129,6 +130,7 @@ export default function Home() {
                     </>
                   )}
                 </button>
+                <ThemeSwitch />
               </div>
             </div>
           </div>

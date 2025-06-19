@@ -2,26 +2,29 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import ToastContainer from "../components/Toast";
+import { ThemeProvider } from "../components/ThemeProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Sirelia - AI-Powered Mermaid Code Visualization",
-  description: "Generate and edit Mermaid diagrams with AI assistance and repository context",
+  title: "Sirelia - Real-time Mermaid Bridge",
+  description: "Real-time Mermaid diagram rendering bridge for instant diagram visualization",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="h-screen w-screen overflow-hidden">
-          {children}
-        </div>
-        <ToastContainer />
+        <ThemeProvider>
+          <div className="h-screen w-screen overflow-hidden">
+            {children}
+          </div>
+          <ToastContainer />
+        </ThemeProvider>
       </body>
     </html>
   );

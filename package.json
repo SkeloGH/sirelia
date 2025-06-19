@@ -1,16 +1,51 @@
 {
   "name": "sirelia",
   "version": "0.1.0",
-  "private": true,
+  "description": "AI-powered Mermaid diagram generation and real-time visualization tool",
+  "main": "lib/index.js",
+  "bin": {
+    "sirelia": "./bin/sirelia.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "templates/",
+    "dist/"
+  ],
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "mcp-bridge": "node scripts/start-mcp-bridge.js"
+    "mcp-bridge": "node scripts/start-mcp-bridge.js",
+    "package:build": "npm run build && npm run build:cli",
+    "build:cli": "tsc --project tsconfig.cli.json",
+    "prepublishOnly": "npm run package:build"
+  },
+  "keywords": [
+    "mermaid",
+    "diagrams",
+    "visualization",
+    "ai",
+    "code-generation",
+    "architecture",
+    "flowcharts",
+    "sequence-diagrams"
+  ],
+  "author": "Sirelia Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SkeloGH/sirelia.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SkeloGH/sirelia/issues"
+  },
+  "homepage": "https://github.com/SkeloGH/sirelia#readme",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.54.0",
     "@codemirror/autocomplete": "^6.18.6",
     "@codemirror/commands": "^6.8.1",
     "@codemirror/lang-javascript": "^6.2.4",
@@ -18,15 +53,12 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.37.2",
-    "@modelcontextprotocol/sdk": "^1.12.3",
-    "@modelcontextprotocol/server-github": "^2025.4.8",
-    "ai": "^4.3.16",
+    "chokidar": "^3.5.3",
     "codemirror": "^6.0.1",
-    "eventsource": "^4.0.0",
+    "commander": "^12.0.0",
     "lucide-react": "^0.516.0",
     "mermaid": "^11.6.0",
     "next": "15.3.3",
-    "openai-edge": "^1.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-resizable-panels": "^3.0.3",
@@ -35,7 +67,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/eventsource": "^1.1.15",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
