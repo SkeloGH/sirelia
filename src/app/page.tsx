@@ -22,8 +22,8 @@ export default function Home() {
   const getConnectionColor = () => {
     if (connectionStatus.serverConnected && connectionStatus.socketConnected) {
       return 'bg-green-500'; // Both connected - green
-    } else if (connectionStatus.serverConnected) {
-      return 'bg-yellow-500'; // Only server connected - yellow
+    } else if (connectionStatus.serverConnected || connectionStatus.socketConnected) {
+      return 'bg-yellow-500'; // Either server or socket connected - yellow
     } else {
       return 'bg-red-500'; // Neither connected - red
     }
@@ -38,6 +38,7 @@ export default function Home() {
         setValidationError(''); // Clear any previous validation errors
       },
       (status: ConnectionStatus) => {
+        console.log('Connection status changed:', status);
         setConnectionStatus(status);
       }
     );
@@ -91,7 +92,10 @@ export default function Home() {
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Sirelia
-                  <span className={`inline-block ml-1 w-2 h-2 rounded-full ${getConnectionColor()}`} />
+                  <span 
+                    className={`inline-block ml-1 w-2 h-2 rounded-full ${getConnectionColor()}`}
+                    title={`Server: ${connectionStatus.serverConnected ? 'Connected' : 'Disconnected'}, Socket: ${connectionStatus.socketConnected ? 'Connected' : 'Disconnected'}`}
+                  />
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Real-time Mermaid diagram visualization with live editing</p>
               </div>

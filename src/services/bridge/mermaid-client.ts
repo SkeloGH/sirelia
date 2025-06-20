@@ -80,9 +80,11 @@ export class MermaidBridgeClient {
       
       this.ws.onerror = (error) => {
         console.error('WebSocket error:', error);
+        this.updateConnectionStatus();
       };
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
+      this.updateConnectionStatus();
     }
   }
 
