@@ -16,6 +16,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
   const [svgContent, setSvgContent] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isRendering, setIsRendering] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [scale, setScale] = useState(1);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -386,16 +387,10 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
       return;
     }
 
-    try {
-      // Create a canvas to render the SVG
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        console.error('Failed to get canvas context');
-        return;
-      }
+    setIsExporting(true);
 
-      // Get SVG dimensions - try multiple approaches
+    try {
+      // Get SVG dimensions for the export
       let svgWidth = 0;
       let svgHeight = 0;
 
@@ -424,75 +419,70 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
 
       console.log('Export dimensions:', { finalWidth, finalHeight, originalWidth: svgWidth, originalHeight: svgHeight });
 
-      // Set canvas size for high quality export
-      canvas.width = finalWidth * 2; // Higher resolution
-      canvas.height = finalHeight * 2;
+      // Use server-side PNG export API with Mermaid code
+      const response = await fetch('/api/export-png', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          width: finalWidth,
+          height: finalHeight
+        })
+      });
 
-      // Clone the SVG to avoid modifying the original
-      const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
-      
-      // Ensure the cloned SVG has proper dimensions
-      if (!clonedSvg.getAttribute('width')) {
-        clonedSvg.setAttribute('width', finalWidth.toString());
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
       }
-      if (!clonedSvg.getAttribute('height')) {
-        clonedSvg.setAttribute('height', finalHeight.toString());
-      }
 
-      // Convert SVG to data URL
-      const svgData = new XMLSerializer().serializeToString(clonedSvg);
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
+      // Get the PNG blob from the response
+      const pngBlob = await response.blob();
+      
+      // Create download link
+      const pngUrl = URL.createObjectURL(pngBlob);
+      const a = document.createElement('a');
+      a.href = pngUrl;
+      a.download = 'sirelia-diagram.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(pngUrl);
+      
+      console.log('PNG export successful');
 
-      // Create image and draw to canvas
-      const imageElement = new window.Image();
-      imageElement.crossOrigin = 'anonymous';
-      
-      imageElement.onload = () => {
-        try {
-          // Clear canvas and set white background
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          // Scale for higher resolution
-          ctx.scale(2, 2);
-          
-          // Draw the image
-          ctx.drawImage(imageElement, 0, 0, finalWidth, finalHeight);
-          
-          // Convert to PNG and download
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const pngUrl = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = pngUrl;
-              a.download = 'sirelia-diagram.png';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(pngUrl);
-              console.log('PNG export successful');
-            } else {
-              console.error('Failed to create PNG blob');
-            }
-          }, 'image/png', 0.95);
-        } catch (error) {
-          console.error('Error drawing image to canvas:', error);
-        } finally {
-          // Clean up the SVG URL
-          URL.revokeObjectURL(url);
-        }
-      };
-      
-      imageElement.onerror = (error) => {
-        console.error('Failed to load SVG as image:', error);
-        URL.revokeObjectURL(url);
-      };
-      
-      imageElement.src = url;
-      
     } catch (error) {
       console.error('Failed to export as PNG:', error);
+      // Fallback: try to download as SVG instead
+      try {
+        const svgElement = containerRef.current.querySelector('svg') as SVGSVGElement;
+        if (svgElement) {
+          const svgData = new XMLSerializer().serializeToString(svgElement);
+          fallbackToSvgDownload(svgData);
+        }
+      } catch (fallbackError) {
+        console.error('SVG fallback also failed:', fallbackError);
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Fallback function to download as SVG when PNG export fails
+  const fallbackToSvgDownload = (svgData: string) => {
+    try {
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      const a = document.createElement('a');
+      a.href = svgUrl;
+      a.download = 'sirelia-diagram.svg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(svgUrl);
+      console.log('SVG export successful (fallback)');
+    } catch (error) {
+      console.error('Failed to export as SVG:', error);
     }
   };
 
@@ -505,7 +495,8 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
       <Toolbar
         scale={scale}
         navigationMode={navigationMode}
-        isDisabled={isDisabled}
+        isDisabled={isDisabled || isExporting}
+        isExporting={isExporting}
         onZoomIn={zoomIn}
         onZoomOut={zoomOut}
         onResetView={resetView}

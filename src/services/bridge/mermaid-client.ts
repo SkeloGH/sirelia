@@ -19,6 +19,7 @@ export class MermaidBridgeClient {
   private onConnectionChange: (status: ConnectionStatus) => void;
   private serverConnected: boolean = false;
   private statusCheckInterval: NodeJS.Timeout | null = null;
+  private _lastStatus?: ConnectionStatus;
 
   constructor(
     onDiagramReceived: (code: string, theme: string) => void,
@@ -98,17 +99,20 @@ export class MermaidBridgeClient {
     // Consider socket connected only if WebSocket exists and is in OPEN state
     const socketConnected = this.ws?.readyState === WebSocket.OPEN;
     
-    console.log('Updating connection status:', {
-      serverConnected: this.serverConnected,
-      socketConnected: socketConnected,
-      wsReadyState: this.ws?.readyState,
-      wsExists: !!this.ws
-    });
-    
-    this.onConnectionChange({
-      serverConnected: this.serverConnected,
-      socketConnected: socketConnected
-    });
+    // Only call onConnectionChange if the status has actually changed
+    if (
+      this.serverConnected !== this._lastStatus?.serverConnected ||
+      socketConnected !== this._lastStatus?.socketConnected
+    ) {
+      this._lastStatus = {
+        serverConnected: this.serverConnected,
+        socketConnected: socketConnected
+      };
+      
+      console.log('Connection status changed:', this._lastStatus);
+      
+      this.onConnectionChange(this._lastStatus);
+    }
   }
 
   private attemptReconnect() {

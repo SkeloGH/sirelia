@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Code, Eye } from 'lucide-react';
 import CodeMirrorEditor from '../components/CodeMirrorEditor';
 import MermaidRenderer from '../components/MermaidRenderer';
@@ -18,8 +18,8 @@ export default function Home() {
   const [showEditor, setShowEditor] = useState(false);
   const [validationError, setValidationError] = useState<string>('');
 
-  // Determine connection indicator color
-  const getConnectionColor = () => {
+  // Memoize connection indicator color to prevent unnecessary re-renders
+  const connectionColor = useMemo(() => {
     if (connectionStatus.serverConnected && connectionStatus.socketConnected) {
       return 'bg-green-500'; // Both connected - green
     } else if (connectionStatus.serverConnected || connectionStatus.socketConnected) {
@@ -27,7 +27,7 @@ export default function Home() {
     } else {
       return 'bg-red-500'; // Neither connected - red
     }
-  };
+  }, [connectionStatus.serverConnected, connectionStatus.socketConnected]);
 
   useEffect(() => {
     // Create and connect to bridge
@@ -93,7 +93,7 @@ export default function Home() {
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Sirelia
                   <span 
-                    className={`inline-block ml-1 w-2 h-2 rounded-full ${getConnectionColor()}`}
+                    className={`inline-block ml-1 w-2 h-2 rounded-full ${connectionColor}`}
                     title={`Server: ${connectionStatus.serverConnected ? 'Connected' : 'Disconnected'}, Socket: ${connectionStatus.socketConnected ? 'Connected' : 'Disconnected'}`}
                   />
                 </h2>
