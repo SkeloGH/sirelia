@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 import Toolbar from './Toolbar';
+import { isValidMermaidCode, getMermaidInitOptions } from '../config/mermaid';
 
 interface MermaidRendererProps {
   code: string;
@@ -35,97 +36,6 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
       .join('\n')
       .trim();
   };
-
-  // Check if code contains valid Mermaid syntax
-  const isValidMermaidCode = useCallback((code: string): boolean => {
-    const filteredCode = filterCode(code);
-    if (!filteredCode.trim()) return false;
-    
-    // Check for common Mermaid diagram types (v11 supports many more types)
-    const diagramTypes = [
-      'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 
-      'stateDiagram', 'stateDiagram-v2', 'entityRelationshipDiagram', 'erDiagram',
-      'userJourney', 'journey', 'gantt', 'pie', 'quadrantChart', 
-      'requirement', 'gitgraph', 'mindmap', 'timeline', 'zenuml', 
-      'sankey', 'c4', 'c4context', 'xychart-beta', 'block-beta', 
-      'packet-beta', 'kanban', 'architecture-beta'
-    ];
-    
-    // Check if the code starts with any of the supported diagram types
-    const hasValidType = diagramTypes.some(type => 
-      filteredCode.toLowerCase().startsWith(type.toLowerCase())
-    );
-
-    // If we don't find a known type, check for specific Mermaid syntax patterns
-    if (!hasValidType) {
-      const lines = filteredCode.split('\n');
-      const firstLine = lines[0].trim().toLowerCase();
-      
-      // Check for specific Mermaid syntax patterns that indicate valid diagram content
-      const hasMermaidSyntax = 
-        firstLine.length > 0 && 
-        !firstLine.startsWith('//') && 
-        !firstLine.startsWith('#') &&
-        (
-          // Flowchart/graph syntax
-          firstLine.includes('-->') || 
-          firstLine.includes('---') || 
-          firstLine.includes('->') ||
-          firstLine.includes('--') ||
-          // Node definitions
-          firstLine.includes('[') ||
-          firstLine.includes('{') ||
-          firstLine.includes('(') ||
-          // Subgraph syntax
-          firstLine.includes('subgraph') ||
-          firstLine.includes('%%') ||
-          // Sequence diagram syntax
-          firstLine.includes('participant') ||
-          firstLine.includes('actor') ||
-          firstLine.includes('note') ||
-          // Class diagram syntax
-          firstLine.includes('class') ||
-          firstLine.includes('interface') ||
-          // State diagram syntax
-          firstLine.includes('state') ||
-          // Gantt syntax
-          firstLine.includes('title') ||
-          firstLine.includes('dateformat') ||
-          firstLine.includes('section') ||
-          // Pie chart syntax
-          firstLine.includes('title') ||
-          firstLine.includes('pie') ||
-          // Git graph syntax
-          firstLine.includes('gitgraph') ||
-          // Mindmap syntax
-          firstLine.includes('mindmap') ||
-          // Timeline syntax
-          firstLine.includes('timeline') ||
-          // C4 syntax
-          firstLine.includes('person') ||
-          firstLine.includes('system') ||
-          firstLine.includes('container') ||
-          firstLine.includes('component') ||
-          // Journey syntax
-          firstLine.includes('title') ||
-          firstLine.includes('section') ||
-          // XY Chart syntax
-          firstLine.includes('xychart') ||
-          // Block diagram syntax
-          firstLine.includes('block') ||
-          // Packet diagram syntax
-          firstLine.includes('packet') ||
-          // Kanban syntax
-          firstLine.includes('kanban') ||
-          // Architecture syntax
-          firstLine.includes('architecture')
-        );
-      
-      return hasMermaidSyntax;
-    }
-    
-    return true;
-  }, []);
 
   // Clean up any stray Mermaid nodes that might have been appended outside the body
   const cleanupStrayMermaidNodes = () => {
@@ -220,35 +130,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
     if (hasInitialized) return;
 
     try {
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: 'default',
-        securityLevel: 'loose',
-        fontFamily: 'Inter, system-ui, sans-serif',
-        // v11 specific options
-        flowchart: {
-          useMaxWidth: true,
-          htmlLabels: true,
-        },
-        sequence: {
-          useMaxWidth: true,
-          diagramMarginX: 50,
-          diagramMarginY: 10,
-        },
-        gantt: {
-          useMaxWidth: true,
-        },
-        // Ensure all diagram types are available
-        er: {
-          useMaxWidth: true,
-        },
-        journey: {
-          useMaxWidth: true,
-        },
-        c4: {
-          useMaxWidth: true,
-        },
-      });
+      mermaid.initialize(getMermaidInitOptions());
       setHasInitialized(true);
     } catch (err) {
       console.error('MermaidRenderer: Failed to initialize Mermaid:', err);
@@ -320,7 +202,7 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
         clearTimeout(renderTimeoutRef.current);
       }
     };
-  }, [code, hasInitialized, isValidMermaidCode]);
+  }, [code, hasInitialized]);
 
   // Add interactive features to SVG
   useEffect(() => {

@@ -6,7 +6,8 @@ import CodeMirrorEditor from '../components/CodeMirrorEditor';
 import MermaidRenderer from '../components/MermaidRenderer';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ThemeSwitch from '../components/ThemeSwitch';
-import { MermaidBridgeClient } from '../services/mcp/mermaid-bridge-client';
+import { MermaidBridgeClient } from '../services/bridge/mermaid-client';
+import { isValidMermaidCode } from '../config/mermaid';
 
 export default function Home() {
   const [mermaidCode, setMermaidCode] = useState<string>('');
@@ -26,7 +27,7 @@ export default function Home() {
         setIsConnected(connected);
       }
     );
-    
+
     client.connect();
 
     return () => {
@@ -37,39 +38,11 @@ export default function Home() {
   // Validate Mermaid syntax before switching to visualizer
   const validateMermaidCode = useCallback((code: string): boolean => {
     if (!code.trim()) return true; // Empty code is valid
+
+    // Use centralized validation
+    const valid = isValidMermaidCode(code);
     
-    // Filter out comments and empty lines
-    const filteredCode = code
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => {
-        if (!line) return false;
-        if (line.startsWith('//')) return false;
-        if (line.startsWith('#')) return false;
-        if (line.startsWith('/*') && line.endsWith('*/')) return false;
-        if (line.startsWith('%%') && line.endsWith('%%')) return true;
-        return true;
-      })
-      .join('\n');
-
-    if (!filteredCode.trim()) {
-      setValidationError('No valid Mermaid diagram detected. Please ensure your code starts with a diagram type (e.g., graph, flowchart, sequenceDiagram).');
-      return false;
-    }
-
-    // Check for common Mermaid diagram types
-    const diagramTypes = [
-      'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 
-      'stateDiagram', 'entityRelationshipDiagram', 'userJourney',
-      'gantt', 'pie', 'quadrantChart', 'requirement', 'gitgraph',
-      'mindmap', 'timeline', 'zenuml', 'sankey'
-    ];
-    
-    const hasValidType = diagramTypes.some(type => 
-      filteredCode.toLowerCase().includes(type.toLowerCase())
-    );
-
-    if (!hasValidType) {
+    if (!valid) {
       setValidationError('No valid Mermaid diagram detected. Please ensure your code starts with a diagram type (e.g., graph, flowchart, sequenceDiagram).');
       return false;
     }
@@ -161,8 +134,8 @@ export default function Home() {
                     </div>
                   </div>
                 ) : (
-                  <MermaidRenderer 
-                    code={mermaidCode} 
+                  <MermaidRenderer
+                    code={mermaidCode}
                     className="h-full"
                   />
                 )}
