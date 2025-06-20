@@ -63,17 +63,41 @@ src/
 │   ├── api/               # API routes
 │   └── page.tsx           # Main application
 ├── components/            # React components
-│   ├── tabs/             # Tab components
-│   └── ...               # Other UI components
+│   ├── CodeMirrorEditor.tsx  # Code editor component
+│   ├── MermaidRenderer.tsx   # Diagram rendering component
+│   ├── ThemeSwitch.tsx       # Theme switching component
+│   ├── Toolbar.tsx           # Toolbar component
+│   ├── Toast.tsx             # Toast notifications
+│   └── ErrorBoundary.tsx     # Error boundary component
 ├── services/             # Business logic services
-│   └── mcp/              # Mermaid bridge services
-└── types/                # TypeScript type definitions
+│   └── bridge/           # Mermaid bridge services
+│       ├── mermaid-client.ts  # WebSocket client
+│       └── mermaid-server.ts  # WebSocket server
+└── config/               # Configuration files
+    └── mermaid.ts        # Mermaid configuration
+```
+
+### CLI Components
+
+```
+lib/
+├── cli/
+│   ├── init.js           # CLI init command
+│   └── start.js          # CLI start command
+├── server/
+│   ├── web-server.js     # Static file server
+│   └── bridge-server.js  # WebSocket bridge server
+├── watcher/
+│   └── file-watcher.js   # File watching service
+└── index.js              # Main package entry point
 ```
 
 ### Key Services
 
 - **MermaidBridgeClient**: Connects to WebSocket server for real-time diagram rendering
 - **MermaidBridgeServer**: WebSocket server for broadcasting diagrams to browsers
+- **FileWatcher**: Monitors `.sirelia.mdd` files for changes and extracts Mermaid code
+- **WebServer**: Serves the static Next.js application
 
 ## 🔄 Development Workflow
 
@@ -158,6 +182,16 @@ useEffect(() => {
 3. Verify all imports are correct
 4. Check for missing dependencies
 
+### 4. File Watcher Issues
+
+**Problem**: Changes to `.sirelia.mdd` not detected
+
+**Solution**:
+1. Ensure the file watcher is running: `sirelia start`
+2. Check file permissions on `.sirelia.mdd`
+3. Verify the file contains valid Mermaid code blocks
+4. Check console logs for file watcher errors
+
 ## 🔄 Pull Request Process
 
 ### Before Submitting
@@ -167,6 +201,7 @@ useEffect(() => {
    - Check linting: `npm run lint`
    - Test WebSocket bridge functionality
    - Verify SSR compatibility
+   - Test file watcher functionality
 
 2. **Update documentation**
    - Update README if needed
