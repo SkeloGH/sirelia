@@ -6,25 +6,39 @@ import CodeMirrorEditor from '../components/CodeMirrorEditor';
 import MermaidRenderer from '../components/MermaidRenderer';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ThemeSwitch from '../components/ThemeSwitch';
-import { MermaidBridgeClient } from '../services/bridge/mermaid-client';
+import { MermaidBridgeClient, ConnectionStatus } from '../services/bridge/mermaid-client';
 import { isValidMermaidCode } from '../config/mermaid';
 
 export default function Home() {
   const [mermaidCode, setMermaidCode] = useState<string>('');
-  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
+    serverConnected: false,
+    socketConnected: false
+  });
   const [showEditor, setShowEditor] = useState(false);
   const [validationError, setValidationError] = useState<string>('');
 
+  // Determine connection indicator color
+  const getConnectionColor = () => {
+    if (connectionStatus.serverConnected && connectionStatus.socketConnected) {
+      return 'bg-green-500'; // Both connected - green
+    } else if (connectionStatus.serverConnected) {
+      return 'bg-yellow-500'; // Only server connected - yellow
+    } else {
+      return 'bg-red-500'; // Neither connected - red
+    }
+  };
+
   useEffect(() => {
-    // Create and connect to MCP bridge
+    // Create and connect to bridge
     const client = new MermaidBridgeClient(
       (code) => {
         console.log('Received Mermaid code:', code.substring(0, 50) + '...');
         setMermaidCode(code);
         setValidationError(''); // Clear any previous validation errors
       },
-      (connected) => {
-        setIsConnected(connected);
+      (status: ConnectionStatus) => {
+        setConnectionStatus(status);
       }
     );
 
@@ -77,7 +91,7 @@ export default function Home() {
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Sirelia
-                  <span className={`inline-block ml-1 w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className={`inline-block ml-1 w-2 h-2 rounded-full ${getConnectionColor()}`} />
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Real-time Mermaid diagram visualization with live editing</p>
               </div>
