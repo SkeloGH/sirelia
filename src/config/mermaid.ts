@@ -147,10 +147,10 @@ export const isValidMermaidCode = (code: string): boolean => {
 
   if (!filteredCode) return false;
 
-  // Check if the code contains any of the supported diagram types
-  // Use includes() instead of startsWith() to handle diagrams with leading comments or whitespace
+  // Check if the code starts with any of the supported diagram types
+  // Since we filter out leading comments and whitespace, valid diagrams should start with their type
   const hasValidType = MERMAID_CONFIG.diagramTypes.some(type => 
-    filteredCode.toLowerCase().includes(type.toLowerCase())
+    filteredCode.toLowerCase().startsWith(type.toLowerCase())
   );
 
   if (hasValidType) return true;
@@ -176,6 +176,22 @@ export const isValidMermaidCode = (code: string): boolean => {
   const allPatterns = Object.values(MERMAID_CONFIG.syntaxPatterns).flat();
   return allPatterns.some(pattern => firstContentLine.includes(pattern));
 };
+
+/*
+Test cases for isValidMermaidCode:
+
+✅ Should be valid:
+- "graph TD\nA-->B"
+- "%% comment\nflowchart LR\nA-->B"
+- "// comment\n# comment\nsequenceDiagram\nA->B"
+- "stateDiagram-v2\n[*] --> Idle"
+
+❌ Should be invalid:
+- "This graph shows the architecture"
+- "The flowchart demonstrates the process"
+- "Here is a sequence diagram explanation"
+- "graph TD\nA-->B\nThis graph shows more details"
+*/
 
 export const getMermaidInitOptions = () => MERMAID_CONFIG.initOptions;
 export const getDiagramTypes = () => MERMAID_CONFIG.diagramTypes;
