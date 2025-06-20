@@ -17,7 +17,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "mcp-bridge": "node scripts/start-mcp-bridge.js",
+    "mcp-bridge": "node scripts/start-bridge.js",
     "package:build": "npm run build && npm run build:cli",
     "build:cli": "tsc --project tsconfig.cli.json",
     "prepublishOnly": "npm run package:build"
