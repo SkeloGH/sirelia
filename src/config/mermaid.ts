@@ -37,14 +37,7 @@ export const MERMAID_CONFIG = {
     'architecture-beta',
     
     // Additional types that might be added
-    'mermaid',
-    'quadrantChart',
-    'requirement',
-    'gitgraph',
-    'mindmap',
-    'timeline',
-    'zenuml',
-    'sankey'
+    'mermaid'
   ],
 
   // Mermaid syntax patterns for validation
