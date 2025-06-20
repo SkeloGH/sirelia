@@ -18,6 +18,7 @@ export class MermaidBridgeClient {
   private onDiagramReceived: (code: string, theme: string) => void;
   private onConnectionChange: (status: ConnectionStatus) => void;
   private serverConnected: boolean = false;
+  private statusCheckInterval: NodeJS.Timeout | null = null;
 
   constructor(
     onDiagramReceived: (code: string, theme: string) => void,
@@ -33,6 +34,9 @@ export class MermaidBridgeClient {
     
     // Connect to WebSocket bridge server
     this.connectWebSocket();
+    
+    // Start periodic status check
+    this.startStatusCheck();
   }
 
   private async checkServerConnection() {
@@ -80,6 +84,8 @@ export class MermaidBridgeClient {
       
       this.ws.onerror = (error) => {
         console.error('WebSocket error:', error);
+        // Force update connection status when error occurs
+        // The WebSocket might still exist but be in error state
         this.updateConnectionStatus();
       };
     } catch (error) {
@@ -89,7 +95,16 @@ export class MermaidBridgeClient {
   }
 
   private updateConnectionStatus() {
+    // Consider socket connected only if WebSocket exists and is in OPEN state
     const socketConnected = this.ws?.readyState === WebSocket.OPEN;
+    
+    console.log('Updating connection status:', {
+      serverConnected: this.serverConnected,
+      socketConnected: socketConnected,
+      wsReadyState: this.ws?.readyState,
+      wsExists: !!this.ws
+    });
+    
     this.onConnectionChange({
       serverConnected: this.serverConnected,
       socketConnected: socketConnected
@@ -110,10 +125,16 @@ export class MermaidBridgeClient {
   }
 
   disconnect() {
+    // Stop periodic status check
+    this.stopStatusCheck();
+    
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
+    
+    // Update status to disconnected
+    this.updateConnectionStatus();
   }
 
   getConnectionStatus(): ConnectionStatus {
@@ -121,5 +142,21 @@ export class MermaidBridgeClient {
       serverConnected: this.serverConnected,
       socketConnected: this.ws?.readyState === WebSocket.OPEN
     };
+  }
+
+  private startStatusCheck() {
+    // Clear any existing interval
+    this.stopStatusCheck();
+    
+    this.statusCheckInterval = setInterval(() => {
+      this.updateConnectionStatus();
+    }, 2000); // Check every 2 seconds
+  }
+
+  private stopStatusCheck() {
+    if (this.statusCheckInterval) {
+      clearInterval(this.statusCheckInterval);
+      this.statusCheckInterval = null;
+    }
   }
 } 
