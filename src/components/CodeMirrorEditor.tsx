@@ -1,18 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { indentWithTab, undo, redo } from '@codemirror/commands';
+import { indentWithTab } from '@codemirror/commands';
 import { keymap } from '@codemirror/view';
 import { 
   Wand2, 
   Trash2, 
-  Copy, 
-  Undo, 
-  Redo
+  Copy
 } from 'lucide-react';
 
 interface CodeMirrorEditorProps {
@@ -20,13 +18,16 @@ interface CodeMirrorEditorProps {
   onChange: (value: string) => void;
 }
 
-export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorProps) {
+const CodeMirrorEditor = React.memo(({ value, onChange }: CodeMirrorEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
   const isInitializedRef = useRef(false);
   const lastValueRef = useRef(value);
+  const isUpdatingRef = useRef(false);
 
   const handleChange = useCallback((newValue: string) => {
+    if (isUpdatingRef.current) return; // Prevent recursive updates
+    
     lastValueRef.current = newValue;
     onChange(newValue);
   }, [onChange]);
@@ -45,7 +46,7 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
           oneDark,
           keymap.of([indentWithTab]), // Enable tab key
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
+            if (update.docChanged && !isUpdatingRef.current) {
               const newValue = update.state.doc.toString();
               // Only trigger onChange if the value actually changed
               if (newValue !== lastValueRef.current) {
@@ -60,16 +61,23 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
             },
             '.cm-editor': {
               height: '100%',
+              maxHeight: '100%',
             },
             '.cm-scroller': {
               fontFamily: 'monospace',
               overflow: 'auto',
+              maxHeight: '100%',
             },
             '.cm-content': {
               padding: '8px 0',
+              minHeight: '100%',
             },
             '.cm-line': {
               padding: '0 8px',
+            },
+            '.cm-tooltip': {
+              maxHeight: '200px',
+              overflow: 'auto',
             },
           }),
         ],
@@ -105,8 +113,12 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
   useEffect(() => {
     if (editorViewRef.current && isInitializedRef.current) {
       const currentValue = editorViewRef.current.state.doc.toString();
+      
+      // Only update if the value has actually changed and it's different from what we last set
       if (currentValue !== value && value !== lastValueRef.current) {
         try {
+          isUpdatingRef.current = true;
+          
           const transaction = editorViewRef.current.state.update({
             changes: {
               from: 0,
@@ -114,10 +126,13 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
               insert: value,
             },
           });
+          
           editorViewRef.current.dispatch(transaction);
           lastValueRef.current = value;
         } catch (error) {
           console.error('Error updating CodeMirror content:', error);
+        } finally {
+          isUpdatingRef.current = false;
         }
       }
     }
@@ -125,27 +140,34 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
 
   const formatCode = () => {
     if (editorViewRef.current) {
-      // Basic formatting - add proper indentation
+      // Improved formatting that preserves existing indentation and handles Mermaid syntax
       const currentValue = editorViewRef.current.state.doc.toString();
       const lines = currentValue.split('\n');
-      let indentLevel = 0;
+      
       const formattedLines = lines.map(line => {
         const trimmed = line.trim();
         if (trimmed === '') return '';
         
-        // Decrease indent for closing braces
-        if (trimmed.startsWith('}') || trimmed.startsWith(']') || trimmed.startsWith(')')) {
-          indentLevel = Math.max(0, indentLevel - 1);
+        // Preserve existing indentation for Mermaid-specific lines
+        const originalIndent = line.match(/^\s*/)?.[0] || '';
+        
+        // Don't modify indentation for Mermaid diagram type declarations
+        if (trimmed.match(/^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|gitgraph|mindmap|timeline|quadrantChart|requirement|zenuml|sankey|c4)/)) {
+          return originalIndent + trimmed;
         }
         
-        const formatted = '  '.repeat(indentLevel) + trimmed;
-        
-        // Increase indent for opening braces
-        if (trimmed.endsWith('{') || trimmed.endsWith('[') || trimmed.endsWith('(')) {
-          indentLevel++;
+        // Don't modify indentation for Mermaid comments
+        if (trimmed.startsWith('%%')) {
+          return originalIndent + trimmed;
         }
         
-        return formatted;
+        // Don't modify indentation for subgraph declarations
+        if (trimmed.startsWith('subgraph') || trimmed.startsWith('end')) {
+          return originalIndent + trimmed;
+        }
+        
+        // For other lines, preserve the original indentation
+        return originalIndent + trimmed;
       });
       
       const formattedCode = formattedLines.join('\n');
@@ -165,22 +187,10 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
     }
   };
 
-  const handleUndo = () => {
-    if (editorViewRef.current) {
-      undo(editorViewRef.current);
-    }
-  };
-
-  const handleRedo = () => {
-    if (editorViewRef.current) {
-      redo(editorViewRef.current);
-    }
-  };
-
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="flex items-center space-x-1">
           <button
             onClick={formatCode}
@@ -188,20 +198,6 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
             title="Format Code"
           >
             <Wand2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleUndo}
-            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="Undo"
-          >
-            <Undo className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleRedo}
-            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="Redo"
-          >
-            <Redo className="w-4 h-4" />
           </button>
         </div>
         <div className="flex items-center space-x-1">
@@ -223,9 +219,13 @@ export default function CodeMirrorEditor({ value, onChange }: CodeMirrorEditorPr
       </div>
       
       {/* Editor */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden min-h-0">
         <div ref={editorRef} className="h-full w-full" />
       </div>
     </div>
   );
-} 
+});
+
+CodeMirrorEditor.displayName = 'CodeMirrorEditor';
+
+export default CodeMirrorEditor; 
