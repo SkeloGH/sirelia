@@ -131,35 +131,50 @@ export const MERMAID_CONFIG = {
 export const isValidMermaidCode = (code: string): boolean => {
   if (!code.trim()) return false;
   
+  // Filter out only actual comment lines, but preserve Mermaid comments and directives
   const filteredCode = code
     .split('\n')
     .filter(line => {
       const trimmed = line.trim();
-      return trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('#') && !trimmed.startsWith('%%');
+      // Keep empty lines, Mermaid comments (%%), and non-comment lines
+      // Only filter out actual comment lines (// and #)
+      return trimmed === '' || 
+             trimmed.startsWith('%%') || 
+             (!trimmed.startsWith('//') && !trimmed.startsWith('#'));
     })
     .join('\n')
     .trim();
 
   if (!filteredCode) return false;
 
-  // Check if the code starts with any of the supported diagram types
+  // Check if the code contains any of the supported diagram types
+  // Use includes() instead of startsWith() to handle diagrams with leading comments or whitespace
   const hasValidType = MERMAID_CONFIG.diagramTypes.some(type => 
-    filteredCode.toLowerCase().startsWith(type.toLowerCase())
+    filteredCode.toLowerCase().includes(type.toLowerCase())
   );
 
   if (hasValidType) return true;
 
   // If no known type, check for specific Mermaid syntax patterns
   const lines = filteredCode.split('\n');
-  const firstLine = lines[0].trim().toLowerCase();
   
-  if (firstLine.length === 0 || firstLine.startsWith('//') || firstLine.startsWith('#')) {
+  // Find the first non-empty, non-comment line
+  let firstContentLine = '';
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('#')) {
+      firstContentLine = trimmed.toLowerCase();
+      break;
+    }
+  }
+  
+  if (firstContentLine.length === 0) {
     return false;
   }
 
   // Check for any Mermaid syntax patterns
   const allPatterns = Object.values(MERMAID_CONFIG.syntaxPatterns).flat();
-  return allPatterns.some(pattern => firstLine.includes(pattern));
+  return allPatterns.some(pattern => firstContentLine.includes(pattern));
 };
 
 export const getMermaidInitOptions = () => MERMAID_CONFIG.initOptions;

@@ -31,7 +31,11 @@ export default function MermaidRenderer({ code, className = '' }: MermaidRendere
       .split('\n')
       .filter(line => {
         const trimmed = line.trim();
-        return trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('#') && !trimmed.startsWith('%%');
+        // Keep empty lines, Mermaid comments (%%), and non-comment lines
+        // Only filter out actual comment lines (// and #)
+        return trimmed === '' || 
+               trimmed.startsWith('%%') || 
+               (!trimmed.startsWith('//') && !trimmed.startsWith('#'));
       })
       .join('\n')
       .trim();
