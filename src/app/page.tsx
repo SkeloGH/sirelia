@@ -1,32 +1,48 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Code, Eye } from 'lucide-react';
 import CodeMirrorEditor from '../components/CodeMirrorEditor';
 import MermaidRenderer from '../components/MermaidRenderer';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ThemeSwitch from '../components/ThemeSwitch';
-import { MermaidBridgeClient } from '../services/mcp/mermaid-bridge-client';
+import { MermaidBridgeClient, ConnectionStatus } from '../services/bridge/mermaid-client';
+import { isValidMermaidCode } from '../config/mermaid';
 
 export default function Home() {
   const [mermaidCode, setMermaidCode] = useState<string>('');
-  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
+    serverConnected: false,
+    socketConnected: false
+  });
   const [showEditor, setShowEditor] = useState(false);
   const [validationError, setValidationError] = useState<string>('');
 
+  // Memoize connection indicator color to prevent unnecessary re-renders
+  const connectionColor = useMemo(() => {
+    if (connectionStatus.serverConnected && connectionStatus.socketConnected) {
+      return 'bg-green-500'; // Both connected - green
+    } else if (connectionStatus.serverConnected || connectionStatus.socketConnected) {
+      return 'bg-yellow-500'; // Either server or socket connected - yellow
+    } else {
+      return 'bg-red-500'; // Neither connected - red
+    }
+  }, [connectionStatus.serverConnected, connectionStatus.socketConnected]);
+
   useEffect(() => {
-    // Create and connect to MCP bridge
+    // Create and connect to bridge
     const client = new MermaidBridgeClient(
       (code) => {
         console.log('Received Mermaid code:', code.substring(0, 50) + '...');
         setMermaidCode(code);
         setValidationError(''); // Clear any previous validation errors
       },
-      (connected) => {
-        setIsConnected(connected);
+      (status: ConnectionStatus) => {
+        console.log('Connection status changed:', status);
+        setConnectionStatus(status);
       }
     );
-    
+
     client.connect();
 
     return () => {
@@ -37,39 +53,11 @@ export default function Home() {
   // Validate Mermaid syntax before switching to visualizer
   const validateMermaidCode = useCallback((code: string): boolean => {
     if (!code.trim()) return true; // Empty code is valid
+
+    // Use centralized validation
+    const valid = isValidMermaidCode(code);
     
-    // Filter out comments and empty lines
-    const filteredCode = code
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => {
-        if (!line) return false;
-        if (line.startsWith('//')) return false;
-        if (line.startsWith('#')) return false;
-        if (line.startsWith('/*') && line.endsWith('*/')) return false;
-        if (line.startsWith('%%') && line.endsWith('%%')) return true;
-        return true;
-      })
-      .join('\n');
-
-    if (!filteredCode.trim()) {
-      setValidationError('No valid Mermaid diagram detected. Please ensure your code starts with a diagram type (e.g., graph, flowchart, sequenceDiagram).');
-      return false;
-    }
-
-    // Check for common Mermaid diagram types
-    const diagramTypes = [
-      'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 
-      'stateDiagram', 'entityRelationshipDiagram', 'userJourney',
-      'gantt', 'pie', 'quadrantChart', 'requirement', 'gitgraph',
-      'mindmap', 'timeline', 'zenuml', 'sankey'
-    ];
-    
-    const hasValidType = diagramTypes.some(type => 
-      filteredCode.toLowerCase().includes(type.toLowerCase())
-    );
-
-    if (!hasValidType) {
+    if (!valid) {
       setValidationError('No valid Mermaid diagram detected. Please ensure your code starts with a diagram type (e.g., graph, flowchart, sequenceDiagram).');
       return false;
     }
@@ -96,15 +84,23 @@ export default function Home() {
   return (
     <div className="min-h-screen min-w-screen bg-gray-50 dark:bg-gray-900">
       <div>
-        {/* Main Content - Full Height */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden" style={{ height: 'calc(100vh)' }}>
-          {/* Toolbar */}
-          <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        {/* Main Content - CSS Grid Layout */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden" style={{ 
+          height: '100vh',
+          display: 'grid',
+          gridTemplateRows: showEditor ? 'auto auto 1fr' : 'auto 1fr',
+          gridTemplateAreas: showEditor ? '"title" "toolbar" "content"' : '"title" "content"'
+        }}>
+          {/* Main Title Bar */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800" style={{ gridArea: 'title' }}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Sirelia
-                  <span className={`inline-block ml-1 w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span 
+                    className={`inline-block ml-1 w-2 h-2 rounded-full ${connectionColor}`}
+                    title={`Server: ${connectionStatus.serverConnected ? 'Connected' : 'Disconnected'}, Socket: ${connectionStatus.socketConnected ? 'Connected' : 'Disconnected'}`}
+                  />
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Real-time Mermaid diagram visualization with live editing</p>
               </div>
@@ -135,10 +131,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Content - Full Remaining Height */}
-          <div className="h-full overflow-hidden">
+          {/* Content Area */}
+          <div style={{ gridArea: 'content', overflow: 'hidden' }}>
             {showEditor ? (
-              <div className="h-full overflow-hidden">
+              <div className="h-full flex flex-col">
                 <ErrorBoundary>
                   <CodeMirrorEditor
                     key="mermaid-editor"
@@ -161,8 +157,8 @@ export default function Home() {
                     </div>
                   </div>
                 ) : (
-                  <MermaidRenderer 
-                    code={mermaidCode} 
+                  <MermaidRenderer
+                    code={mermaidCode}
                     className="h-full"
                   />
                 )}

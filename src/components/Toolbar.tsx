@@ -7,13 +7,15 @@ import {
   Image,
   GitBranch,
   Move,
-  MousePointer
+  MousePointer,
+  Loader2
 } from 'lucide-react';
 
 interface ToolbarProps {
   scale: number;
   navigationMode: 'drag' | 'select';
   isDisabled?: boolean;
+  isExporting?: boolean;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetView: () => void;
@@ -27,6 +29,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   scale,
   navigationMode,
   isDisabled = false,
+  isExporting = false,
   onZoomIn,
   onZoomOut,
   onResetView,
@@ -113,12 +116,16 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <GitBranch className="w-4 h-4" />
         </button>
         <button
-          disabled={isDisabled}
+          disabled={isDisabled || isExporting}
           onClick={onExportPng}
           className={buttonClass}
-          title="Export as .png"
+          title={isExporting ? "Exporting..." : "Export as .png"}
         >
-          <Image className="w-4 h-4" />
+          {isExporting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Image className="w-4 h-4" />
+          )}
         </button>
       </div>
     </div>
