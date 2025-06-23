@@ -42,13 +42,19 @@ export class MermaidBridgeClient {
 
   private async checkServerConnection() {
     try {
-      await fetch('http://localhost:3000', { 
-        method: 'HEAD',
-        mode: 'no-cors' // This will work even with CORS restrictions
+      // Use a simple GET request to check if the server is accessible
+      // Remove 'no-cors' mode to get actual response status
+      const response = await fetch('http://localhost:3000', { 
+        method: 'GET',
+        // Remove mode: 'no-cors' to get actual response
+        signal: AbortSignal.timeout(3000) // 3 second timeout
       });
-      this.serverConnected = true;
+      
+      // Consider server connected if we get any response (even 404 is fine)
+      this.serverConnected = response.ok || response.status < 500;
       this.updateConnectionStatus();
-    } catch {
+    } catch (error) {
+      console.log('Server connection check failed:', error);
       this.serverConnected = false;
       this.updateConnectionStatus();
     }

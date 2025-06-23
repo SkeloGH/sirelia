@@ -84,10 +84,15 @@ export default function Home() {
   return (
     <div className="min-h-screen min-w-screen bg-gray-50 dark:bg-gray-900">
       <div>
-        {/* Main Content - Full Height */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden" style={{ height: 'calc(100vh)' }}>
-          {/* Toolbar */}
-          <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        {/* Main Content - CSS Grid Layout */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden" style={{ 
+          height: '100vh',
+          display: 'grid',
+          gridTemplateRows: showEditor ? 'auto auto 1fr' : 'auto 1fr',
+          gridTemplateAreas: showEditor ? '"title" "toolbar" "content"' : '"title" "content"'
+        }}>
+          {/* Main Title Bar */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800" style={{ gridArea: 'title' }}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -126,10 +131,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Content - Full Remaining Height */}
-          <div className="h-full overflow-hidden">
+          {/* Content Area */}
+          <div style={{ gridArea: 'content', overflow: 'hidden' }}>
             {showEditor ? (
-              <div className="h-full overflow-hidden">
+              <div className="h-full flex flex-col">
                 <ErrorBoundary>
                   <CodeMirrorEditor
                     key="mermaid-editor"

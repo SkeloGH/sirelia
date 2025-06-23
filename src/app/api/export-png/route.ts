@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { writeFile, unlink } from 'fs/promises';
+import { writeFile, unlink, readFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
 const execAsync = promisify(exec);
+
+// Validation function for width and height parameters
+function validateDimension(value: unknown): number | null {
+  if (typeof value === 'number' && value > 0 && value <= 10000) {
+    return Math.floor(value);
+  }
+  if (typeof value === 'string') {
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 10000) {
+      return parsed;
+    }
+  }
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +28,10 @@ export async function POST(request: NextRequest) {
     if (!code) {
       return NextResponse.json({ error: 'Mermaid code is required' }, { status: 400 });
     }
+
+    // Validate and sanitize width and height parameters
+    const validatedWidth = validateDimension(width);
+    const validatedHeight = validateDimension(height);
 
     // Create temporary files
     const tempDir = tmpdir();
@@ -24,18 +42,21 @@ export async function POST(request: NextRequest) {
       // Write the Mermaid code to a temporary file
       await writeFile(inputFile, code, 'utf8');
 
-      // Use mmdc (Mermaid CLI) to convert to PNG
+      // Build mmdc command with proper validation and template literals
       let mmdcCommand = `npx mmdc -i "${inputFile}" -o "${outputFile}"`;
       
-      if (width && height) {
-        mmdcCommand += ` -w ${width} -H ${height}`;
+      if (validatedWidth && validatedHeight) {
+        mmdcCommand += ` -w ${validatedWidth} -H ${validatedHeight}`;
+      } else if (validatedWidth) {
+        mmdcCommand += ` -w ${validatedWidth}`;
+      } else if (validatedHeight) {
+        mmdcCommand += ` -H ${validatedHeight}`;
       }
 
       await execAsync(mmdcCommand);
 
       // Read the generated PNG file
-      const fs = await import('fs/promises');
-      const pngBuffer = await fs.readFile(outputFile);
+      const pngBuffer = await readFile(outputFile);
 
       // Clean up temporary files
       await Promise.all([

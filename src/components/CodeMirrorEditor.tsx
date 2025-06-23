@@ -24,6 +24,7 @@ const CodeMirrorEditor = React.memo(({ value, onChange }: CodeMirrorEditorProps)
   const isInitializedRef = useRef(false);
   const lastValueRef = useRef(value);
   const isUpdatingRef = useRef(false);
+  const wasFocusedRef = useRef(false);
 
   const handleChange = useCallback((newValue: string) => {
     if (isUpdatingRef.current) return; // Prevent recursive updates
@@ -61,16 +62,14 @@ const CodeMirrorEditor = React.memo(({ value, onChange }: CodeMirrorEditorProps)
             },
             '.cm-editor': {
               height: '100%',
-              maxHeight: '100%',
             },
             '.cm-scroller': {
               fontFamily: 'monospace',
               overflow: 'auto',
-              maxHeight: '100%',
+              height: '100%',
             },
             '.cm-content': {
               padding: '8px 0',
-              minHeight: '100%',
             },
             '.cm-line': {
               padding: '0 8px',
@@ -107,7 +106,7 @@ const CodeMirrorEditor = React.memo(({ value, onChange }: CodeMirrorEditorProps)
         }
       }
     };
-  }, [value, handleChange]);
+  }, []);
 
   // Update editor content when value prop changes (but not during initialization)
   useEffect(() => {
@@ -119,16 +118,31 @@ const CodeMirrorEditor = React.memo(({ value, onChange }: CodeMirrorEditorProps)
         try {
           isUpdatingRef.current = true;
           
+          // Store current focus state
+          wasFocusedRef.current = editorViewRef.current.hasFocus;
+          
+          // Preserve cursor position and selection
+          const selection = editorViewRef.current.state.selection;
+          
           const transaction = editorViewRef.current.state.update({
             changes: {
               from: 0,
               to: editorViewRef.current.state.doc.length,
               insert: value,
             },
+            // Preserve selection if possible
+            selection: selection.main.empty ? 
+              { anchor: Math.min(selection.main.anchor, value.length) } : 
+              selection,
           });
           
           editorViewRef.current.dispatch(transaction);
           lastValueRef.current = value;
+          
+          // Restore focus if it was focused before
+          if (wasFocusedRef.current) {
+            editorViewRef.current.focus();
+          }
         } catch (error) {
           console.error('Error updating CodeMirror content:', error);
         } finally {
@@ -188,9 +202,13 @@ const CodeMirrorEditor = React.memo(({ value, onChange }: CodeMirrorEditorProps)
   };
 
   return (
-    <div className="h-full flex flex-col min-h-0">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+    <div className="h-full" style={{ 
+      display: 'grid',
+      gridTemplateRows: 'auto 1fr',
+      gridTemplateAreas: '"toolbar" "editor"'
+    }}>
+      {/* Editor Toolbar */}
+      <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" style={{ gridArea: 'toolbar' }}>
         <div className="flex items-center space-x-1">
           <button
             onClick={formatCode}
@@ -218,8 +236,8 @@ const CodeMirrorEditor = React.memo(({ value, onChange }: CodeMirrorEditorProps)
         </div>
       </div>
       
-      {/* Editor */}
-      <div className="flex-1 overflow-hidden min-h-0">
+      {/* Editor Content */}
+      <div style={{ gridArea: 'editor', overflow: 'auto' }}>
         <div ref={editorRef} className="h-full w-full" />
       </div>
     </div>
