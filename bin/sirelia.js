@@ -4,8 +4,8 @@ import { Command } from 'commander';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { init } from '../lib/cli/init.js';
-import { start } from '../lib/cli/start.js';
+import { init } from '../dist/cli/init.js';
+import { start } from '../dist/cli/start.js';
 
 // Get the version from package.json
 const __filename = fileURLToPath(import.meta.url);
@@ -38,7 +38,7 @@ program
   .description('Start the Sirelia web server and bridge')
   .option('-p, --port <port>', 'Web server port', '3000')
   .option('-b, --bridge-port <port>', 'Bridge server port', '3001')
-  .option('-w, --watch <file>', 'Watch specific file', '.sirelia.mdd')
+  .option('-w, --watch <file>', 'Watch specific file', '.sirelia.mmd')
   .action(async (options) => {
     try {
       await start(options);

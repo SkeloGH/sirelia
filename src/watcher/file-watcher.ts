@@ -1,7 +1,11 @@
 import chokidar from 'chokidar';
 import fs from 'fs';
 
-export async function startFileWatcher(filePath, bridgePort = 3001) {
+interface WatcherInstance {
+  close: () => void;
+}
+
+export async function startFileWatcher(filePath: string, bridgePort = 3001): Promise<WatcherInstance> {
   return new Promise((resolve, reject) => {
     try {
       console.log(`👀 Watching file: ${filePath}`);
@@ -17,7 +21,7 @@ export async function startFileWatcher(filePath, bridgePort = 3001) {
       });
       
       // Function to validate Mermaid code
-      function isValidMermaidCode(code) {
+      function isValidMermaidCode(code: string): boolean {
         if (!code || !code.trim()) return false;
         
         const trimmedCode = code.trim();
@@ -34,11 +38,11 @@ export async function startFileWatcher(filePath, bridgePort = 3001) {
       }
       
       // Function to extract Mermaid code from content
-      function extractMermaidCode(content, filePath) {
-        const mermaidBlocks = [];
+      function extractMermaidCode(content: string, filePath: string): string[] {
+        const mermaidBlocks: string[] = [];
         
         // Check if this is a pure Mermaid file (no markdown blocks)
-        const mermaidExtensions = ['.mdd', '.mermaid', '.mmd', '.mer'];
+        const mermaidExtensions = ['.mmd', '.mermaid', '.mmd', '.mer'];
         const isPureMermaidFile = mermaidExtensions.some(ext => filePath.endsWith(ext));
         
         if (isPureMermaidFile) {
@@ -57,7 +61,7 @@ export async function startFileWatcher(filePath, bridgePort = 3001) {
         console.log(`📄 Detected markdown file: ${filePath}, extracting Mermaid blocks`);
         const lines = content.split('\n');
         let inMermaidBlock = false;
-        let currentBlock = [];
+        let currentBlock: string[] = [];
         
         for (const line of lines) {
           if (line.trim().startsWith('```mermaid')) {
@@ -86,7 +90,7 @@ export async function startFileWatcher(filePath, bridgePort = 3001) {
       }
       
       // Function to send Mermaid code to bridge
-      async function sendToBridge(code) {
+      async function sendToBridge(code: string) {
         try {
           const response = await fetch(`http://localhost:${bridgePort}/mermaid`, {
             method: 'POST',
@@ -103,7 +107,7 @@ export async function startFileWatcher(filePath, bridgePort = 3001) {
           const result = await response.json();
           console.log('📤 Sent to bridge:', result.message);
         } catch (error) {
-          console.error('❌ Failed to send to bridge:', error.message);
+          console.error('❌ Failed to send to bridge:', (error as Error).message);
         }
       }
       
@@ -128,7 +132,7 @@ export async function startFileWatcher(filePath, bridgePort = 3001) {
             console.log('ℹ️  No valid Mermaid diagrams found in file');
           }
         } catch (error) {
-          console.error('❌ Error reading file:', error.message);
+          console.error('❌ Error reading file:', (error as Error).message);
         }
       });
       
@@ -151,7 +155,7 @@ export async function startFileWatcher(filePath, bridgePort = 3001) {
             }
           }
         } catch (error) {
-          console.error('❌ Error reading initial file:', error.message);
+          console.error('❌ Error reading initial file:', (error as Error).message);
         }
         
         resolve({

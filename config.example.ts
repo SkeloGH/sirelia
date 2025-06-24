@@ -19,7 +19,7 @@ export const config = {
   // File Watcher Configuration
   watcher: {
     // Default file to watch
-    defaultFile: process.env.WATCH_FILE || '.sirelia.mdd',
+    defaultFile: process.env.WATCH_FILE || '.sirelia.mmd',
     // File watching stability threshold (ms)
     stabilityThreshold: process.env.STABILITY_THRESHOLD || 100,
     // File watching poll interval (ms)
