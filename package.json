@@ -1,6 +1,6 @@
 {
   "name": "sirelia",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "type": "module",
   "description": "Real-time Mermaid diagram generation and visualization tool with file watching",
   "main": "dist/index.js",
