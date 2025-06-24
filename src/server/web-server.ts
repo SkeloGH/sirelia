@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // MIME type mapping
-const mimeTypes = {
+const mimeTypes: Record<string, string> = {
   '.html': 'text/html',
   '.js': 'text/javascript',
   '.css': 'text/css',
@@ -25,7 +25,11 @@ const mimeTypes = {
   '.wasm': 'application/wasm'
 };
 
-export async function startWebServer(port = 3000) {
+interface ServerInstance {
+  close: () => void;
+}
+
+export async function startWebServer(port = 3000): Promise<ServerInstance> {
   return new Promise((resolve, reject) => {
     try {
       // Find the static files directory
@@ -41,7 +45,7 @@ export async function startWebServer(port = 3000) {
           }
           
           // Remove query parameters
-          filePath = filePath.split('?')[0];
+          filePath = filePath?.split('?')[0] || '/index.html';
           
           // Security: prevent directory traversal
           if (filePath.includes('..')) {
@@ -64,7 +68,8 @@ export async function startWebServer(port = 3000) {
           res.end(content);
           
         } catch (error) {
-          if (error.code === 'ENOENT') {
+          const err = error as NodeJS.ErrnoException;
+          if (err.code === 'ENOENT') {
             // File not found, serve index.html for SPA routing
             try {
               const indexPath = path.join(staticDir, 'index.html');
@@ -76,7 +81,7 @@ export async function startWebServer(port = 3000) {
               res.end('404 Not Found');
             }
           } else {
-            console.error('Server error:', error);
+            console.error('Server error:', err);
             res.writeHead(500, { 'Content-Type': 'text/plain' });
             res.end('500 Internal Server Error');
           }

@@ -2,13 +2,13 @@
   "name": "sirelia",
   "version": "0.1.13",
   "description": "Real-time Mermaid diagram generation and visualization tool with file watching",
-  "main": "lib/index.js",
+  "main": "dist/index.js",
   "bin": {
     "sirelia": "./bin/sirelia.js"
   },
   "files": [
     "bin/",
-    "lib/",
+    "dist/",
     "templates/",
     "out/"
   ],

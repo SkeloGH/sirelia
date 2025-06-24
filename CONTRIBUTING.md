@@ -96,7 +96,7 @@ lib/
 
 - **MermaidBridgeClient**: Connects to WebSocket server for real-time diagram rendering
 - **MermaidBridgeServer**: WebSocket server for broadcasting diagrams to browsers
-- **FileWatcher**: Monitors `.sirelia.mdd` files for changes and extracts Mermaid code
+- **FileWatcher**: Monitors `.sirelia.mmd` files for changes and extracts Mermaid code
 - **WebServer**: Serves the static Next.js application
 
 ## 🔄 Development Workflow
@@ -184,11 +184,11 @@ useEffect(() => {
 
 ### 4. File Watcher Issues
 
-**Problem**: Changes to `.sirelia.mdd` not detected
+**Problem**: Changes to `.sirelia.mmd` not detected
 
 **Solution**:
 1. Ensure the file watcher is running: `sirelia start`
-2. Check file permissions on `.sirelia.mdd`
+2. Check file permissions on `.sirelia.mmd`
 3. Verify the file contains valid Mermaid code blocks
 4. Check console logs for file watcher errors
 

@@ -1,7 +1,16 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { createServer } from 'http';
+import { createServer, IncomingMessage, ServerResponse } from 'http';
 
-export async function startBridgeServer(port = 3001) {
+interface MermaidData {
+  code: string;
+  theme?: string;
+}
+
+interface ServerInstance {
+  close: () => void;
+}
+
+export async function startBridgeServer(port = 3001): Promise<ServerInstance> {
   return new Promise((resolve, reject) => {
     try {
       // Create HTTP server
@@ -11,7 +20,7 @@ export async function startBridgeServer(port = 3001) {
       const wss = new WebSocketServer({ server: httpServer });
       
       // Store connected browser clients
-      const browserClients = new Set();
+      const browserClients = new Set<WebSocket>();
       
       wss.on('connection', (ws) => {
         console.log('🔗 Browser client connected');
@@ -24,7 +33,7 @@ export async function startBridgeServer(port = 3001) {
       });
       
       // Broadcast Mermaid code to all connected browsers
-      async function broadcastToBrowsers(data) {
+      async function broadcastToBrowsers(data: MermaidData) {
         const message = JSON.stringify({
           type: 'mermaid-render',
           ...data,
@@ -39,7 +48,7 @@ export async function startBridgeServer(port = 3001) {
       }
       
       // Handle HTTP POST requests for Mermaid code
-      httpServer.on('request', (req, res) => {
+      httpServer.on('request', (req: IncomingMessage, res: ServerResponse) => {
         if (req.method === 'POST' && req.url === '/mermaid') {
           let body = '';
           req.on('data', chunk => {
@@ -47,7 +56,7 @@ export async function startBridgeServer(port = 3001) {
           });
           req.on('end', () => {
             try {
-              const { code, theme = 'default' } = JSON.parse(body);
+              const { code, theme = 'default' } = JSON.parse(body) as MermaidData;
               console.log('📨 Received Mermaid code via HTTP:', { 
                 code: code.substring(0, 100) + '...', 
                 theme 

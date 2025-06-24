@@ -5,7 +5,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export async function init(options = {}) {
+interface InitOptions {
+  force?: boolean;
+}
+
+export async function init(options: InitOptions = {}) {
   const { force = false } = options;
   
   console.log('🚀 Initializing Sirelia...');
@@ -13,15 +17,15 @@ export async function init(options = {}) {
   // Get current working directory
   const cwd = process.cwd();
   
-  // Check if .sirelia.mdd already exists
-  const sireliaFile = path.join(cwd, '.sirelia.mdd');
+  // Check if .sirelia.mmd already exists
+  const sireliaFile = path.join(cwd, '.sirelia.mmd');
   if (fs.existsSync(sireliaFile) && !force) {
-    console.log('⚠️  .sirelia.mdd already exists. Use --force to overwrite.');
+    console.log('⚠️  .sirelia.mmd already exists. Use --force to overwrite.');
     return;
   }
   
-  // Create .sirelia.mdd file
-  const templatePath = path.join(__dirname, '../../templates/.sirelia.mdd');
+  // Create .sirelia.mmd file
+  const templatePath = path.join(__dirname, '../../templates/.sirelia.mmd');
   let templateContent = '';
   
   try {
@@ -67,23 +71,23 @@ graph TD
   }
   
   fs.writeFileSync(sireliaFile, templateContent);
-  console.log('✅ Created .sirelia.mdd file');
+  console.log('✅ Created .sirelia.mmd file');
   
   // Add to .gitignore
   const gitignorePath = path.join(cwd, '.gitignore');
-  const gitignoreContent = '\n# Sirelia\n.sirelia.mdd\n';
+  const gitignoreContent = '\n# Sirelia\n.sirelia.mmd\n';
   
   if (fs.existsSync(gitignorePath)) {
     const existingContent = fs.readFileSync(gitignorePath, 'utf8');
-    if (!existingContent.includes('.sirelia.mdd')) {
+    if (!existingContent.includes('.sirelia.mmd')) {
       fs.appendFileSync(gitignorePath, gitignoreContent);
-      console.log('✅ Added .sirelia.mdd to .gitignore');
+      console.log('✅ Added .sirelia.mmd to .gitignore');
     } else {
-      console.log('ℹ️  .sirelia.mdd already in .gitignore');
+      console.log('ℹ️  .sirelia.mmd already in .gitignore');
     }
   } else {
     fs.writeFileSync(gitignorePath, gitignoreContent);
-    console.log('✅ Created .gitignore with .sirelia.mdd');
+    console.log('✅ Created .gitignore with .sirelia.mmd');
   }
   
   // Add script to package.json
@@ -104,7 +108,7 @@ graph TD
         console.log('ℹ️  sirelia:start script already exists in package.json');
       }
     } catch (error) {
-      console.log('⚠️  Could not update package.json:', error.message);
+      console.log('⚠️  Could not update package.json:', (error as Error).message);
     }
   } else {
     console.log('ℹ️  No package.json found, skipping script addition');
@@ -112,7 +116,7 @@ graph TD
   
   console.log('\n🎉 Sirelia initialized successfully!');
   console.log('\nNext steps:');
-  console.log('1. Edit .sirelia.mdd with your Mermaid diagrams');
+  console.log('1. Edit .sirelia.mmd with your Mermaid diagrams');
   console.log('2. Run: npm run sirelia:start');
   console.log('3. Open http://localhost:3000 to view the web interface');
 } 

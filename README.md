@@ -1,12 +1,12 @@
 # Sirelia - Real-time Mermaid Diagram Generation
 
-Sirelia is an npm package that provides real-time Mermaid diagram generation and visualization. It includes a web interface for editing diagrams and a file watcher that automatically updates diagrams when you save your `.sirelia.mdd` file.
+Sirelia is an npm package that provides real-time Mermaid diagram generation and visualization. It includes a web interface for editing diagrams and a file watcher that automatically updates diagrams when you save your `.sirelia.mmd` file.
 
 ## Features
 
 ### 🎯 Core Functionality
 - **Real-time Mermaid Rendering**: Instant preview of diagrams as you edit
-- **File Watcher**: Automatically detects changes in `.sirelia.mdd` files
+- **File Watcher**: Automatically detects changes in `.sirelia.mmd` files
 - **Web Interface**: Modern, intuitive interface for diagram editing
 - **CodeMirror Editor**: Advanced code editing with syntax highlighting
 - **Single Diagram Support**: Edit and view one diagram at a time
@@ -33,9 +33,9 @@ Sirelia is an npm package that provides real-time Mermaid diagram generation and
 Sirelia isn't just a diagram renderer—it's your visual copilot for software design, architecture, and documentation. Use Sirelia alongside your favorite AI coding assistants (like GitHub Copilot, Cursor, or ChatGPT) to:
 
 - **Instantly visualize architecture**: Paste or generate Mermaid diagrams from code, requirements, or AI suggestions and see them live.
-- **Collaborate visually**: Share `.sirelia.mdd` files in your repo for team-wide, always-up-to-date diagrams.
+- **Collaborate visually**: Share `.sirelia.mmd` files in your repo for team-wide, always-up-to-date diagrams.
 - **Document as you code**: Keep architecture, flows, and data models in sync with your codebase, using Sirelia as a living documentation hub.
-- **AI + Diagrams**: Prompt your AI assistant to generate Mermaid code, drop it into `.sirelia.mdd`, and instantly see the result in your browser.
+- **AI + Diagrams**: Prompt your AI assistant to generate Mermaid code, drop it into `.sirelia.mmd`, and instantly see the result in your browser.
 - **Frictionless onboarding**: New team members can run `sirelia start` and immediately explore your system visually.
 
 **Sirelia bridges the gap between code, documentation, and visual thinking—making your AI copilot even more powerful.**
@@ -59,8 +59,8 @@ sirelia init
 ```
 
 This will:
-- Create a `.sirelia.mdd` file with example diagrams
-- Add `.sirelia.mdd` to your `.gitignore`
+- Create a `.sirelia.mmd` file with example diagrams
+- Add `.sirelia.mmd` to your `.gitignore`
 - Add a `sirelia:start` script to your `package.json`
 
 ### Start Sirelia
@@ -78,14 +78,14 @@ npm run sirelia:start
 This will:
 - Start the web server on http://localhost:3000
 - Start the bridge server on port 3001
-- Watch your `.sirelia.mdd` file for changes
+- Watch your `.sirelia.mmd` file for changes
 - Automatically send updates to the web interface
 
 ## Usage
 
 ### 1. Edit Your Diagrams
 
-Open the `.sirelia.mdd` file in your favorite editor and add Mermaid diagrams:
+Open the `.sirelia.mmd` file in your favorite editor and add Mermaid diagrams:
 
 ```markdown
 # My Project Architecture
@@ -173,7 +173,7 @@ Start the Sirelia web server and bridge.
 **Options:**
 - `-p, --port <port>`: Web server port (default: 3000)
 - `-b, --bridge-port <port>`: Bridge server port (default: 3001)
-- `-w, --watch <file>`: Watch specific file (default: .sirelia.mdd)
+- `-w, --watch <file>`: Watch specific file (default: .sirelia.mmd)
 
 ## Project Structure
 
@@ -181,8 +181,8 @@ After initialization, your project will have:
 
 ```
 your-project/
-├── .sirelia.mdd          # Your Mermaid diagrams
-├── .gitignore           # Updated to ignore .sirelia.mdd
+├── .sirelia.mmd          # Your Mermaid diagrams
+├── .gitignore           # Updated to ignore .sirelia.mmd
 └── package.json         # Updated with sirelia:start script
 ```
 
@@ -202,7 +202,7 @@ sirelia init
 sirelia start
 ```
 
-Each project will have its own `.sirelia.mdd` file and independent file watching.
+Each project will have its own `.sirelia.mmd` file and independent file watching.
 
 ## Development
 
