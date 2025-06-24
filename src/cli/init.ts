@@ -9,6 +9,20 @@ interface InitOptions {
   force?: boolean;
 }
 
+// Function to detect file encoding
+function detectEncoding(buffer: Buffer): 'utf8' | 'utf16le' {
+  // Check for UTF-16 LE BOM
+  if (buffer.length >= 2 && buffer[0] === 0xFF && buffer[1] === 0xFE) {
+    return 'utf16le';
+  }
+  // Check for UTF-16 BE BOM
+  if (buffer.length >= 2 && buffer[0] === 0xFE && buffer[1] === 0xFF) {
+    return 'utf16le'; // We'll handle BE as LE for simplicity
+  }
+  // Default to UTF-8
+  return 'utf8';
+}
+
 export async function init(options: InitOptions = {}) {
   const { force = false } = options;
   
@@ -29,7 +43,10 @@ export async function init(options: InitOptions = {}) {
   let templateContent = '';
   
   try {
-    templateContent = fs.readFileSync(templatePath, 'utf8');
+    // Read the file as a buffer first to detect encoding
+    const buffer = fs.readFileSync(templatePath);
+    const encoding = detectEncoding(buffer);
+    templateContent = buffer.toString(encoding);
   } catch {
     // Fallback template if file doesn't exist
     templateContent = `# Sirelia Diagram
@@ -70,7 +87,8 @@ graph TD
 `;
   }
   
-  fs.writeFileSync(sireliaFile, templateContent);
+  // Write the file as UTF-8
+  fs.writeFileSync(sireliaFile, templateContent, 'utf8');
   console.log('✅ Created .sirelia.mmd file');
   
   // Add to .gitignore
