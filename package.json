@@ -11,7 +11,9 @@
     "bin/",
     "dist/",
     "templates/",
-    "out/"
+    "out/",
+    "!**/*.map",
+    "!**/*.d.ts"
   ],
   "scripts": {
     "dev": "next dev --turbopack",
