@@ -43,3 +43,18 @@ next-env.d.ts
 
 # temporary files
 .pull-request-tmp
+
+# npm pack files
+*.tgz
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
