@@ -35,6 +35,7 @@ export const MERMAID_CONFIG = {
     'packet-beta',
     'kanban',
     'architecture-beta',
+    'radar',
     
     // Additional types that might be added
     'mermaid'
@@ -94,7 +95,10 @@ export const MERMAID_CONFIG = {
     kanban: ['kanban'],
     
     // Architecture syntax
-    architecture: ['architecture']
+    architecture: ['architecture'],
+    
+    // Radar syntax
+    radar: ['radar']
   },
 
   // Mermaid initialization options

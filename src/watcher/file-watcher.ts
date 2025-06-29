@@ -1,5 +1,6 @@
 import chokidar from 'chokidar';
 import fs from 'fs';
+import { isValidMermaidCode } from '../config/mermaid.js';
 
 interface WatcherInstance {
   close: () => void;
@@ -19,23 +20,6 @@ export async function startFileWatcher(filePath: string, bridgePort = 3001): Pro
           pollInterval: 100
         }
       });
-      
-      // Function to validate Mermaid code
-      function isValidMermaidCode(code: string): boolean {
-        if (!code || !code.trim()) return false;
-        
-        const trimmedCode = code.trim();
-        
-        // Check if it starts with a valid diagram type
-        const validTypes = [
-          'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 
-          'stateDiagram', 'stateDiagram-v2', 'erDiagram', 'journey', 
-          'gantt', 'pie', 'gitgraph', 'mindmap', 'timeline', 'c4'
-        ];
-        
-        const firstLine = trimmedCode.split('\n')[0].trim().toLowerCase();
-        return validTypes.some(type => firstLine.startsWith(type));
-      }
       
       // Function to extract Mermaid code from content
       function extractMermaidCode(content: string, filePath: string): string[] {
