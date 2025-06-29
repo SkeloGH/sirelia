@@ -1,11 +1,11 @@
 {
   "name": "sirelia",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "type": "module",
   "description": "Real-time Mermaid diagram generation and visualization tool with file watching",
   "main": "dist/index.js",
   "bin": {
-    "sirelia": "./bin/sirelia.js"
+    "sirelia": "bin/sirelia.js"
   },
   "files": [
     "bin/",
@@ -38,7 +38,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SkeloGH/sirelia.git"
+    "url": "git+https://github.com/SkeloGH/sirelia.git"
   },
   "bugs": {
     "url": "https://github.com/SkeloGH/sirelia/issues"
