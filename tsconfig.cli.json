@@ -16,7 +16,9 @@
     "sourceMap": true
   },
   "include": [
-    "src/**/*"
+    "src/cli/**/*",
+    "src/watcher/**/*",
+    "src/config/**/*"
   ],
   "exclude": [
     "node_modules",
